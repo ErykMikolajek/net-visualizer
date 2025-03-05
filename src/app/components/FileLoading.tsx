@@ -28,11 +28,13 @@ export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
    };
 
    return (
-      <div className="flex flex-col items-center justify-center w-full pb-30">
-         <div className="mb-12">
-            <p className="text-gray-600 mb-3">Choose the model framework:</p>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] w-full max-w-2xl mx-auto px-4 mb-30">
+         <div className="w-full mb-12">
+            <p className="text-zinc-900 mb-3 text-center font-medium">
+               Choose the model framework:
+            </p>
             <select
-               className="w-64 p-3 text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+               className="w-full max-w-md mx-auto block p-3 text-zinc-900 bg-zinc-50 border border-zinc-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 focus:border-transparent transition-all"
                value={framework}
                onChange={(e) => setFramework(e.target.value)}
             >
@@ -43,19 +45,14 @@ export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
          </div>
 
          {/* File Upload Section */}
-         <p className="text-gray-600 mb-3">Upload your model file below:</p>
-         <div className="bg-gray-50 p-8 rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-500 transition-colors">
+         <p className="text-zinc-900 mb-4 text-center font-medium">
+            Upload your model file below:
+         </p>
+         <div className="bg-zinc-50 p-8 rounded-xl border border-zinc-300 shadow-sm hover:shadow-md transition-all w-full max-w-md mx-auto">
             <div className="flex flex-col items-center">
-               <Image
-                  src="/file.svg"
-                  alt="Upload file"
-                  width={48}
-                  height={48}
-                  className="mb-4"
-               />
                <label
                   htmlFor="file-upload"
-                  className="cursor-pointer bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                  className="cursor-pointer bg-zinc-900 text-zinc-50 px-8 py-3 rounded-xl hover:bg-gray-800 transition-all font-medium shadow-sm hover:shadow-md"
                >
                   Choose File
                </label>
@@ -66,12 +63,12 @@ export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
                   accept={supportedFrameworks[framework].join(",")}
                   onChange={handleFileChange}
                />
-               <p className="mt-2 text-sm text-gray-500">
+               <p className="mt-4 text-sm text-zinc-900 text-center">
                   {selectedFile
                      ? `Selected: ${selectedFile.name}`
                      : "Drag and drop your file here, or click to select"}
                </p>
-               <p className="text-xs text-gray-400 mt-1">
+               <p className="text-xs text-zinc-700 mt-2 text-center">
                   Supported formats: {supportedFrameworks[framework].join(", ")}
                </p>
             </div>

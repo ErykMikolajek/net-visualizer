@@ -6,16 +6,15 @@ export default function Visualizer({ data }: { data: File }) {
 
    useEffect(() => {
       setNetworkData(data);
-      // Scroll to the visualizer when it mounts
       visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
    }, [data]);
 
    return (
       <div
          ref={visualizerRef}
-         className="w-full flex flex-col items-center min-h-screen"
+         className="w-full flex flex-col items-center min-h-screen bg-zinc-50"
       >
-         <h2 className="text-2xl font-semibold text-gray-700 mt-6 mb-8">
+         <h2 className="text-2xl font-semibold text-zinc-900 mt-6 mb-8">
             Your neural net:
          </h2>
          <div className="flex-1 w-full flex items-center justify-center">
