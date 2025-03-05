@@ -12,7 +12,7 @@ export default function Visualizer({ data }: { data: File }) {
    return (
       <div
          ref={visualizerRef}
-         className="w-full flex flex-col items-center min-h-screen bg-zinc-50"
+         className="w-full flex flex-col items-center min-h-screen"
       >
          <h2 className="text-2xl font-semibold text-zinc-900 mt-6 mb-8">
             Your neural net:

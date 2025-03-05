@@ -9,7 +9,7 @@ export default function Home() {
    const [networkData, setNetworkData] = useState<File | null>(null);
 
    return (
-      <main className="h-screen">
+      <main className="h-screen w-full">
          <WebGLBackground />
          <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl font-bold text-zinc-900 pt-20 mb-12">
