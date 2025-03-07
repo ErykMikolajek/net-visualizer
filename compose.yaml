@@ -1,0 +1,10 @@
+services:
+  backend:
+    container_name: visualizer_backend
+    image: visualizer_backend:1.0.0
+    build:
+      context: ./backend
+      dockerfile: flask.dockerfile
+    ports:
+      - '4000:4000'
+    restart: always

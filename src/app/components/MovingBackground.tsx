@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-export default function WebGLBackground() {
+export default function MovingBackground() {
    const containerRef = useRef<HTMLDivElement>(null);
    const [blur, setBlur] = useState(0);
    const [opacity, setOpacity] = useState(1);

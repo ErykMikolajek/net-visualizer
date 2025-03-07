@@ -3,11 +3,12 @@
 import { useState } from "react";
 import FileLoading from "./components/FileLoading";
 import Visualizer from "./components/Visualizer";
-import WebGLBackground from "./components/WebGLBackground";
+import WebGLBackground from "./components/MovingBackground";
 
 export default function Home() {
    const [networkData, setNetworkData] = useState<File | null>(null);
 
+   // TODO: add blur behind text (when nothing is behind it - it is invisible, when some object is behind the blur becomes visible naturally)
    return (
       <main className="h-screen w-full">
          <WebGLBackground />
