@@ -8,7 +8,7 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-ENV FLASK_APP=process.py
+ENV FLASK_APP=app.py
 ENV FLASK_ENV=development
 
 EXPOSE 4000

@@ -12,7 +12,13 @@ export default function Visualizer({ data }: { data: File }) {
          setLoading(true);
          setError(null);
          try {
-            const response = await fetch("http://localhost:4000/api/test");
+            const formData = new FormData();
+            formData.append("file", data);
+
+            const response = await fetch("http://localhost:4000/api/pytorch", {
+               method: "POST",
+               body: formData,
+            });
             if (!response.ok) {
                throw new Error("Failed to fetch network data");
             }
