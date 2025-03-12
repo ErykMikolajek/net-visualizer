@@ -8,7 +8,7 @@ interface FileLoadingProps {
 }
 
 export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
-   const [framework, setFramework] = useState<string>("pytorch");
+   const [framework, setFramework] = useState<string>("tensorflow");
    const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
    const supportedFrameworks: Record<string, string[]> = {
@@ -38,8 +38,8 @@ export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
                value={framework}
                onChange={(e) => setFramework(e.target.value)}
             >
-               <option value="pytorch">Pytorch</option>
                <option value="tensorflow">Tensorflow</option>
+               <option value="pytorch">Pytorch</option>
                <option value="other">Other</option>
             </select>
          </div>

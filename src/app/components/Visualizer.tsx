@@ -1,8 +1,19 @@
 import { useState, useEffect, useRef } from "react";
-// import { parseFile } from "../../utils/FileHandler";
+
+interface Layer {
+   name: string;
+   type: string;
+   output_shape: string;
+}
+
+interface LoadedModel {
+   model_name: string;
+   total_params: number;
+   layers: Array<Layer>;
+}
 
 export default function Visualizer({ data }: { data: File }) {
-   const [networkData, setNetworkData] = useState<any>(null);
+   const [modelData, setModelData] = useState<LoadedModel | null>(null);
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState<string | null>(null);
    const visualizerRef = useRef<HTMLDivElement>(null);
@@ -15,16 +26,19 @@ export default function Visualizer({ data }: { data: File }) {
             const formData = new FormData();
             formData.append("file", data);
 
-            const response = await fetch("http://localhost:4000/api/pytorch", {
-               method: "POST",
-               body: formData,
-            });
+            // TODO: make endpoint call dependent on selected framework
+            const response = await fetch(
+               "http://localhost:4000/api/tensorflow",
+               {
+                  method: "POST",
+                  body: formData,
+               }
+            );
             if (!response.ok) {
                throw new Error("Failed to fetch network data");
             }
             const result = await response.json();
-            console.log(result);
-            setNetworkData(result);
+            setModelData(result);
          } catch (err) {
             setError(err instanceof Error ? err.message : "An error occurred");
             console.error("Error fetching network data:", err);
@@ -51,12 +65,20 @@ export default function Visualizer({ data }: { data: File }) {
             <div className="w-96 h-96 bg-gray-100 rounded-lg flex items-center justify-center">
                {loading && <p className="text-gray-400">Loading...</p>}
                {error && <p className="text-red-500">{error}</p>}
-               {!loading && !error && networkData && (
+               {!loading && !error && modelData && (
                   <pre className="text-gray-600 p-4 overflow-auto">
-                     {JSON.stringify(networkData, null, 2)}
+                     {modelData.model_name}
+                     <ul>
+                        {modelData.layers.map((layer) => (
+                           <li>
+                              Name: {layer.name}, output shape:{" "}
+                              {layer.output_shape}
+                           </li>
+                        ))}
+                     </ul>
                   </pre>
                )}
-               {!loading && !error && !networkData && (
+               {!loading && !error && !modelData && (
                   <p className="text-gray-400">TEST</p>
                )}
             </div>

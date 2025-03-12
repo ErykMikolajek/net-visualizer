@@ -1,0 +1,51 @@
+{
+    "model_name": "sequential",
+    "total_params": 16871426,
+    "layers": [
+        {
+            "name": "conv2d",
+            "type": "Conv2D",
+            "output_shape": "(64, 128, 128, 32)"
+        },
+        {
+            "name": "max_pooling2d",
+            "type": "MaxPooling2D",
+            "output_shape": "(64, 64, 64, 32)"
+        },
+        {
+            "name": "conv2d_1",
+            "type": "Conv2D",
+            "output_shape": "(64, 64, 64, 64)"
+        },
+        {
+            "name": "max_pooling2d_1",
+            "type": "MaxPooling2D",
+            "output_shape": "(64, 32, 32, 64)"
+        },
+        {
+            "name": "conv2d_2",
+            "type": "Conv2D",
+            "output_shape": "(64, 32, 32, 128)"
+        },
+        {
+            "name": "max_pooling2d_2",
+            "type": "MaxPooling2D",
+            "output_shape": "(64, 16, 16, 128)"
+        },
+        {
+            "name": "flatten",
+            "type": "Flatten",
+            "output_shape": "(64, 32768)"
+        },
+        {
+            "name": "dense",
+            "type": "Dense",
+            "output_shape": "(64, 512)"
+        },
+        {
+            "name": "dense_1",
+            "type": "Dense",
+            "output_shape": "(64, 2)"
+        }
+    ]
+}
