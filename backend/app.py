@@ -1,50 +1,45 @@
-from flask import Flask, request, jsonify, make_response
-from flask_cors import CORS
-from os import environ
+from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import json
+import os
+import tempfile
+
 import utils
 
-app = Flask(__name__)
-CORS(app, resources={
-    r"/api/*": {
-        "origins": ["http://localhost:3000"],
-        "supports_credentials": True
-    }
-})
+app = FastAPI()
 
-# Test route to validate api
-@app.route('/api/test', methods=['GET'])
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get("/test")
 def test():
-  return make_response(jsonify({'message': 'test route'}), 200)
+    return {"Test": "message"}
 
-# pytorch model endpoint
-@app.route('/api/pytorch', methods=['POST'])
-def process_pytroch():
-    if 'file' not in request.files:
-        return make_response(jsonify({'error': 'No file provided'}), 400)
+@app.post("/tensorflow")
+async def process_tensorflow(file: UploadFile):
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.h5') as temp_file:
+        content = await file.read()
+        temp_file.write(content)
+        temp_file_path = temp_file.name
     
-    file = request.files['file']
-    if file.filename == '':
-        return make_response(jsonify({'error': 'No file selected'}), 400)
+    try:
+        return json.loads(utils.parse_tensorflow_file(temp_file_path))
         
-    msg = utils.parse_pytroch_file(file)
-    # filename = file.filename
-    return make_response(jsonify({'message': msg}), 200)
-
-
-# tensorflow model endpoint
-@app.route('/api/tensorflow', methods=['POST'])
-def process_tensorflow():
-    if 'file' not in request.files:
-        return make_response(jsonify({'error': 'No file provided'}), 400)
-    
-    file = request.files['file']
-    if file.filename == '':
-        return make_response(jsonify({'error': 'No file selected'}), 400)
-        
-    msg = utils.parse_tensorflow_file(file)
-    # filename = file.filename
-    # return make_response(jsonify({'message': msg}), 200)
-    return make_response(msg, 200)
-
-
-# TODO: add additional filetypes endpoints
+    except Exception as e:
+        return {"error": f"Error loading model: {str(e)}"}
+    finally:
+        if os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)

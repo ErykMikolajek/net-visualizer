@@ -27,13 +27,10 @@ export default function Visualizer({ data }: { data: File }) {
             formData.append("file", data);
 
             // TODO: make endpoint call dependent on selected framework
-            const response = await fetch(
-               "http://localhost:4000/api/tensorflow",
-               {
-                  method: "POST",
-                  body: formData,
-               }
-            );
+            const response = await fetch("http://localhost:4000/tensorflow", {
+               method: "POST",
+               body: formData,
+            });
             if (!response.ok) {
                throw new Error("Failed to fetch network data");
             }
@@ -52,6 +49,11 @@ export default function Visualizer({ data }: { data: File }) {
          visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
       }
    }, [data]);
+
+   useEffect(() => {
+      console.log("Updated model data:", modelData);
+      console.log("model name:", modelData?.model_name);
+   }, [modelData]);
 
    return (
       <div
