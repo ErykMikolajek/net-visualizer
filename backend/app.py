@@ -40,6 +40,6 @@ async def process_tensorflow(file: UploadFile):
         
     except Exception as e:
         return {"error": f"Error loading model: {str(e)}"}
-    finally:
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+    # finally:
+    #     if os.path.exists(temp_file_path):
+    #         os.unlink(temp_file_path)

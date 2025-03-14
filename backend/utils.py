@@ -4,6 +4,8 @@ def parse_tensorflow_file(file_path):
 
     model = tf.keras.models.load_model(file_path, compile=False)
 
+    input_shape = (None, 128, 128, 1)
+
     model_info = {
         'model_name': model.name,
         'total_params': model.count_params(),
@@ -17,7 +19,10 @@ def parse_tensorflow_file(file_path):
             'output_shape': '',
         }
         if hasattr(layer, 'output_shape'):
+            print("HAS ATTRIBUTE:", layer.output_shape)
             layer_info['output_shape'] = str(layer.output_shape)
+        else:
+            layer_info['output_shape'] = str(layer.compute_output_shape(input_shape))
         # print(layer.get_config())
         model_info['layers'].append(layer_info)
     

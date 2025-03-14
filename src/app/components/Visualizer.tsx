@@ -52,7 +52,6 @@ export default function Visualizer({ data }: { data: File }) {
 
    useEffect(() => {
       console.log("Updated model data:", modelData);
-      console.log("model name:", modelData?.model_name);
    }, [modelData]);
 
    return (
@@ -72,8 +71,8 @@ export default function Visualizer({ data }: { data: File }) {
                      {modelData.model_name}
                      <ul>
                         {modelData.layers.map((layer) => (
-                           <li>
-                              Name: {layer.name}, output shape:{" "}
+                           <li key={layer.name}>
+                              Name: {layer.name}, output shape:
                               {layer.output_shape}
                            </li>
                         ))}
