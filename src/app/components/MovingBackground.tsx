@@ -7,6 +7,7 @@ export default function MovingBackground() {
    const [blur, setBlur] = useState(0);
    const [opacity, setOpacity] = useState(1);
 
+   // Scroll handling
    useEffect(() => {
       const handleScroll = () => {
          const scrollY = window.scrollY;
@@ -24,6 +25,8 @@ export default function MovingBackground() {
       return () => window.removeEventListener("scroll", handleScroll);
    }, []);
 
+   // Background shapes
+   /*
    useEffect(() => {
       if (!containerRef.current) return;
 
@@ -59,8 +62,8 @@ export default function MovingBackground() {
 
          // Random position
          shape.position.set(
-            (Math.random() - 0.5) * 10,
-            (Math.random() - 0.5) * 10,
+            (Math.random() - 0.5) * 15,
+            (Math.random() - 0.5) * 15,
             -5 + (Math.random() - 0.5) * 5
          );
 
@@ -103,15 +106,16 @@ export default function MovingBackground() {
          });
       };
    }, []);
+   */
 
    return (
       <div
          ref={containerRef}
-         className="fixed top-0 left-0 w-full h-full -z-10"
+         className="fixed top-0 left-0 w-full h-full -z-10 bg-white"
          style={{
             filter: `blur(${blur}px)`,
             opacity: opacity,
-            transition: "opacity",
+            // transition: "opacity",
          }}
       ></div>
    );
