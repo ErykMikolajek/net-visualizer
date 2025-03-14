@@ -22,7 +22,8 @@ def parse_tensorflow_file(file_path):
             print("HAS ATTRIBUTE:", layer.output_shape)
             layer_info['output_shape'] = str(layer.output_shape)
         else:
-            layer_info['output_shape'] = str(layer.compute_output_shape(input_shape))
+            input_shape = layer.compute_output_shape(input_shape)
+            layer_info['output_shape'] = str(input_shape)
         # print(layer.get_config())
         model_info['layers'].append(layer_info)
     
