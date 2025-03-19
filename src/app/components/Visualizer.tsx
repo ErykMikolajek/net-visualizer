@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
+import {
+   setupScene,
+   createShapes,
+   animateScene,
+   handleResize,
+} from "../lib/threeScene";
+import { fetchNetworkData } from "../lib/fetchModel";
 
 interface Layer {
    name: string;
@@ -10,158 +17,60 @@ interface Layer {
 interface LoadedModel {
    model_name: string;
    total_params: number;
-   layers: Array<Layer>;
+   layers: Layer[];
 }
 
 export default function Visualizer({ data }: { data: File }) {
    const containerRef = useRef<HTMLDivElement>(null);
+   const visualizerRef = useRef<HTMLDivElement>(null);
    const [modelData, setModelData] = useState<LoadedModel | null>(null);
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState<string | null>(null);
-   const visualizerRef = useRef<HTMLDivElement>(null);
 
    useEffect(() => {
-      const fetchNetworkData = async () => {
-         setLoading(true);
-         setError(null);
-         try {
-            const formData = new FormData();
-            formData.append("file", data);
+      if (!data) return;
 
-            // TODO: make endpoint call dependent on selected framework
-            const response = await fetch("http://localhost:4000/tensorflow", {
-               method: "POST",
-               body: formData,
-            });
-            if (!response.ok) {
-               throw new Error("Failed to fetch network data");
-            }
-            const result = await response.json();
-            setModelData(result);
-         } catch (err) {
-            setError(err instanceof Error ? err.message : "An error occurred");
-            console.error("Error fetching network data:", err);
-         } finally {
-            setLoading(false);
-         }
-      };
+      setLoading(true);
+      setError(null);
 
-      if (data) {
-         fetchNetworkData();
-         visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
-      }
+      fetchNetworkData(data)
+         .then(setModelData)
+         .catch((err) => setError(err.message))
+         .finally(() => setLoading(false));
+
+      visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
    }, [data]);
 
    useEffect(() => {
-      if (!containerRef.current) return;
+      if (!containerRef.current || !modelData) return;
 
-      // Setup scene
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(
-         75,
-         window.innerWidth / window.innerHeight,
-         0.1,
-         1000
-      );
-      const renderer = new THREE.WebGLRenderer({ alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      containerRef.current.appendChild(renderer.domElement);
+      const sceneSetup = setupScene(containerRef.current);
+      if (!sceneSetup) return;
+      const scene = sceneSetup.scene;
+      const camera = sceneSetup.camera;
+      const renderer = sceneSetup.renderer;
+      const controls = sceneSetup.controls;
 
-      // Create some geometric shapes
-      const shapes: THREE.Mesh[] = [];
+      if (!scene || !camera || !renderer) return;
 
-      const maxSize = 250;
-      const geometries =
-         modelData?.layers.map((layer) => {
-            const shapes = layer.output_shape.match(/\d+/g)?.map(Number) ?? [];
-            console.log(shapes);
-            const [width, height, depth] = [
-               Math.min(shapes.at(-1) ?? 2, maxSize),
-               Math.min(shapes.at(-2) ?? 2, maxSize),
-               Math.min(shapes.at(-3) ?? 2, maxSize),
-            ];
-            return new THREE.BoxGeometry(width, height, depth);
-         }) ?? [];
-
-      const spacing = 20;
-      const padding = 250;
-      let drawingPosition = -(window.innerWidth / 2) + padding;
-      // TODO: save geometries as an dictionary (just use model data and parse inside function below?) to render differently depending on layer type (other rotation for dense layer
-      geometries.map((form, index) => {
-         const randomColor = () =>
-            `#${Math.floor(Math.random() * 0xffffff)
-               .toString(16)
-               .padStart(6, "0")}`;
-         const material = new THREE.MeshBasicMaterial({
-            // color: 0x808080,
-            color: randomColor(),
-         });
-
-         const shape = new THREE.Mesh(form, material);
-
-         shape.position.set(drawingPosition, 0, 5);
-         // drawingPosition += form.boundingBox?.getSize.x + spacing;
-         drawingPosition += form.parameters.width + spacing;
-
-         // shape.rotateY(45);
-
-         shapes.push(shape);
-         scene.add(shape);
-      });
+      const shapes = createShapes(modelData.layers);
+      shapes.forEach((shape) => scene.add(shape));
 
       camera.position.z = 500;
       renderer.render(scene, camera);
 
-      // Animation function
-      function animate() {
-         requestAnimationFrame(animate);
+      animateScene(renderer, scene, camera, shapes, controls);
+      const cleanupResize = handleResize(camera, renderer);
 
-         shapes.forEach((shape) => {
-            shape.rotation.x += 0.002;
-            // shape.rotation.y += 0.003;
-         });
-
-         renderer.render(scene, camera);
-      }
-
-      // Handle window resize
-      const handleResize = () => {
-         camera.aspect = window.innerWidth / window.innerHeight;
-         camera.updateProjectionMatrix();
-         renderer.setSize(window.innerWidth, window.innerHeight);
-      };
-
-      window.addEventListener("resize", handleResize);
-      animate();
-
-      // Cleanup
       return () => {
-         window.removeEventListener("resize", handleResize);
+         cleanupResize();
          containerRef.current?.removeChild(renderer.domElement);
-         geometries.forEach((geometry) => geometry.dispose());
          shapes.forEach((shape) => {
             shape.geometry.dispose();
             (shape.material as THREE.Material).dispose();
          });
       };
    }, [modelData]);
-
-   // {!loading && !error && modelData && (
-   //    <pre className="text-gray-600 p-4 overflow-auto">
-   //       {modelData.model_name}
-   //       <ul>
-   //          {modelData.layers.map((layer) => (
-   //             <li key={layer.name}>
-   //                Name: {layer.name}, output shape:
-   //                {layer.output_shape}
-   //             </li>
-   //          ))}
-   //       </ul>
-   //    </pre>
-   // )}
-   // {!loading && !error && !modelData && (
-   //    <p className="text-gray-400">TEST</p>
-   // )}
 
    return (
       <div
