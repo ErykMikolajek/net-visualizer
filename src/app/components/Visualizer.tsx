@@ -74,14 +74,18 @@ export default function Visualizer({ data }: { data: File }) {
       const geometries =
          modelData?.layers.map((layer) => {
             const shapes = layer.output_shape.match(/\d+/g)?.map(Number) ?? [];
+            console.log(shapes);
             const [width, height, depth] = [
-               Math.min(shapes.at(-3) ?? 1, maxSize),
-               Math.min(shapes.at(-2) ?? 1, maxSize),
-               Math.min(shapes.at(-1) ?? 1, maxSize),
+               Math.min(shapes.at(-1) ?? 2, maxSize),
+               Math.min(shapes.at(-2) ?? 2, maxSize),
+               Math.min(shapes.at(-3) ?? 2, maxSize),
             ];
             return new THREE.BoxGeometry(width, height, depth);
          }) ?? [];
 
+      const spacing = 20;
+      const padding = 250;
+      let drawingPosition = -(window.innerWidth / 2) + padding;
       // TODO: save geometries as an dictionary (just use model data and parse inside function below?) to render differently depending on layer type (other rotation for dense layer
       geometries.map((form, index) => {
          const randomColor = () =>
@@ -92,10 +96,14 @@ export default function Visualizer({ data }: { data: File }) {
             // color: 0x808080,
             color: randomColor(),
          });
+
          const shape = new THREE.Mesh(form, material);
 
-         shape.position.set(index * 20, 0, 5);
-         shape.rotateY(45);
+         shape.position.set(drawingPosition, 0, 5);
+         // drawingPosition += form.boundingBox?.getSize.x + spacing;
+         drawingPosition += form.parameters.width + spacing;
+
+         // shape.rotateY(45);
 
          shapes.push(shape);
          scene.add(shape);
@@ -104,17 +112,17 @@ export default function Visualizer({ data }: { data: File }) {
       camera.position.z = 500;
       renderer.render(scene, camera);
 
-      // // Animation function
-      // function animate() {
-      //    requestAnimationFrame(animate);
+      // Animation function
+      function animate() {
+         requestAnimationFrame(animate);
 
-      //    shapes.forEach((shape) => {
-      //       shape.rotation.x += 0.002;
-      //       shape.rotation.y += 0.003;
-      //    });
+         shapes.forEach((shape) => {
+            shape.rotation.x += 0.002;
+            // shape.rotation.y += 0.003;
+         });
 
-      //    renderer.render(scene, camera);
-      // }
+         renderer.render(scene, camera);
+      }
 
       // Handle window resize
       const handleResize = () => {
@@ -124,7 +132,7 @@ export default function Visualizer({ data }: { data: File }) {
       };
 
       window.addEventListener("resize", handleResize);
-      // animate();
+      animate();
 
       // Cleanup
       return () => {
@@ -164,13 +172,9 @@ export default function Visualizer({ data }: { data: File }) {
             Your neural net:
          </h2>
          <div className="flex-1 w-full flex items-center justify-center">
-            <div className="w-96 h-96 bg-gray-100 rounded-lg flex items-center justify-center">
-               {loading && <p className="text-gray-400">Loading...</p>}
-               {error && <p className="text-red-500">{error}</p>}
-               {!loading && !error && modelData && (
-                  <div ref={containerRef}></div>
-               )}
-            </div>
+            {loading && <p className="text-gray-400">Loading...</p>}
+            {error && <p className="text-red-500">{error}</p>}
+            {!loading && !error && modelData && <div ref={containerRef}></div>}
          </div>
       </div>
    );

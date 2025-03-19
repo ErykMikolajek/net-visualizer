@@ -112,11 +112,13 @@ export default function MovingBackground() {
       <div
          ref={containerRef}
          className="fixed top-0 left-0 w-full h-full -z-10 bg-white"
-         style={{
-            filter: `blur(${blur}px)`,
-            opacity: opacity,
-            // transition: "opacity",
-         }}
+         style={
+            {
+               // filter: `blur(${blur}px)`,
+               // opacity: opacity,
+               // transition: "opacity",
+            }
+         }
       ></div>
    );
 }
