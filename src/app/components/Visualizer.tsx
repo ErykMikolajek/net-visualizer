@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import * as THREE from "three";
 import {
    setupScene,
-   createShapes,
+   createModel,
    animateScene,
    handleResize,
 } from "../lib/threeScene";
@@ -53,22 +53,29 @@ export default function Visualizer({ data }: { data: File }) {
 
       if (!scene || !camera || !renderer) return;
 
-      const shapes = createShapes(modelData.layers);
-      shapes.forEach((shape) => scene.add(shape));
+      const model = createModel(modelData.layers);
+      scene.add(model);
+      // shapes.forEach((shape) => scene.add(shape));
 
-      camera.position.z = 500;
+      camera.position.z = 400;
+      camera.position.y = 100;
       renderer.render(scene, camera);
 
-      animateScene(renderer, scene, camera, shapes, controls);
+      animateScene(renderer, scene, camera, controls);
       const cleanupResize = handleResize(camera, renderer);
 
       return () => {
          cleanupResize();
          containerRef.current?.removeChild(renderer.domElement);
-         shapes.forEach((shape) => {
-            shape.geometry.dispose();
-            (shape.material as THREE.Material).dispose();
-         });
+         if (model) {
+            scene.remove(model);
+            model.children.forEach((child) => {
+               const mesh = child as THREE.Mesh;
+               if (mesh.geometry) mesh.geometry.dispose();
+               if (mesh.material) (mesh.material as THREE.Material).dispose();
+            });
+            model.clear();
+         }
       };
    }, [modelData]);
 

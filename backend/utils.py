@@ -4,13 +4,18 @@ def parse_tensorflow_file(file_path):
 
     model = tf.keras.models.load_model(file_path, compile=False)
 
-    input_shape = (None, 128, 128, 1)
-
     model_info = {
         'model_name': model.name,
         'total_params': model.count_params(),
         'layers': []
     }
+
+    input_shape = (None, 128, 128, 1)
+    model_info['layers'].append({
+        'name': 'assumed_input_shape',
+        'type': 'InputLayer',
+        'output_shape': str(input_shape)
+    })
 
     for layer in model.layers:
         layer_info = {
