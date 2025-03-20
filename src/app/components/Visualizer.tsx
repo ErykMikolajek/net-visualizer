@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import * as THREE from "three";
 import {
    setupScene,
@@ -49,20 +50,20 @@ export default function Visualizer({ data }: { data: File }) {
       const scene = sceneSetup.scene;
       const camera = sceneSetup.camera;
       const renderer = sceneSetup.renderer;
+      const labelRenderer = sceneSetup.labelRenderer;
       const controls = sceneSetup.controls;
 
       if (!scene || !camera || !renderer) return;
 
       const model = createModel(modelData.layers);
       scene.add(model);
-      // shapes.forEach((shape) => scene.add(shape));
 
       camera.position.z = 400;
       camera.position.y = 100;
       renderer.render(scene, camera);
 
-      animateScene(renderer, scene, camera, controls);
-      const cleanupResize = handleResize(camera, renderer);
+      animateScene(renderer, labelRenderer, scene, camera, controls);
+      const cleanupResize = handleResize(camera, renderer, labelRenderer);
 
       return () => {
          cleanupResize();
@@ -73,6 +74,17 @@ export default function Visualizer({ data }: { data: File }) {
                const mesh = child as THREE.Mesh;
                if (mesh.geometry) mesh.geometry.dispose();
                if (mesh.material) (mesh.material as THREE.Material).dispose();
+            });
+            model.children.forEach((child) => {
+               if (child instanceof THREE.Object3D) {
+                  child.children.forEach((labelChild) => {
+                     if (labelChild instanceof CSS2DObject) {
+                        labelRenderer.domElement.removeChild(
+                           labelChild.element
+                        );
+                     }
+                  });
+               }
             });
             model.clear();
          }
