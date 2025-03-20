@@ -52,7 +52,7 @@ export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
             <div className="flex flex-col items-center">
                <label
                   htmlFor="file-upload"
-                  className="cursor-pointer bg-zinc-900 text-zinc-50 px-8 py-3 rounded-xl hover:bg-gray-800 transition-all font-medium shadow-sm hover:shadow-md"
+                  className="cursor-pointer bg-zinc-900 text-zinc-50 px-8 py-3 rounded-xl hover:bg-zinc-800 transition-all font-medium shadow-sm hover:shadow-md"
                >
                   Choose File
                </label>

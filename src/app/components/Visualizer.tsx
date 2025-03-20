@@ -8,6 +8,8 @@ import {
    handleResize,
 } from "../lib/threeScene";
 import { fetchNetworkData } from "../lib/fetchModel";
+import SideBar from "./SideBar";
+import ScrollTopButton from "./ScrollTopButton";
 
 interface Layer {
    name: string;
@@ -104,6 +106,8 @@ export default function Visualizer({ data }: { data: File }) {
             {error && <p className="text-red-500">{error}</p>}
             {!loading && !error && modelData && <div ref={containerRef}></div>}
          </div>
+         <SideBar />
+         <ScrollTopButton />
       </div>
    );
 }
