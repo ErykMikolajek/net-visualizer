@@ -26,7 +26,12 @@ interface LoadedModel {
 export default function Visualizer({ data }: { data: File }) {
    const containerRef = useRef<HTMLDivElement>(null);
    const visualizerRef = useRef<HTMLDivElement>(null);
+   const [lastScrollY, setLastScrollY] = useState(0);
+   const [lastTime, setLastTime] = useState(0);
+   const [shouldScroll, setShouldScroll] = useState(false);
+   const [scrollVelocity, setScrollVelocity] = useState(0);
    const [modelData, setModelData] = useState<LoadedModel | null>(null);
+   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState<string | null>(null);
 
@@ -43,6 +48,71 @@ export default function Visualizer({ data }: { data: File }) {
 
       visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
    }, [data]);
+
+   useEffect(() => {
+      const handleScroll = () => {
+         const now = performance.now();
+         const scrollY = window.scrollY;
+         const deltaY = scrollY - lastScrollY;
+         const deltaTime = now - lastTime;
+
+         if (deltaTime > 0) {
+            const velocity = deltaY / deltaTime; // px per ms
+            setScrollVelocity(velocity);
+         }
+
+         const isScrollingDown = deltaY > 0;
+         setLastScrollY(scrollY);
+         setLastTime(now);
+
+         if (isScrollingDown && scrollY >= window.innerHeight / 2) {
+            setShouldScroll(true);
+         }
+      };
+
+      window.addEventListener("scroll", handleScroll);
+      return () => window.removeEventListener("scroll", handleScroll);
+   }, [lastScrollY, lastTime]);
+
+   useEffect(() => {
+      if (shouldScroll && visualizerRef.current) {
+         const targetPosition = visualizerRef.current.offsetTop;
+         const startPosition = window.scrollY;
+         const distance = targetPosition - startPosition;
+
+         // bazowy czas animacji, ale im większa prędkość, tym krócej
+         const baseDuration = 800;
+         const speedFactor = Math.max(
+            0.3,
+            Math.min(1, Math.abs(scrollVelocity) / 0.5)
+         ); // normalizacja
+         const duration = baseDuration * speedFactor; // dynamiczna długość animacji
+
+         let startTime: number | null = null;
+
+         function animateScroll(currentTime: number) {
+            if (startTime === null) startTime = currentTime;
+            const timeElapsed = currentTime - startTime;
+            const progress = Math.min(timeElapsed / duration, 1);
+            window.scrollTo(
+               0,
+               startPosition + distance * easeOutCubic(progress)
+            );
+
+            if (timeElapsed < duration) {
+               requestAnimationFrame(animateScroll);
+            } else {
+               setShouldScroll(false);
+            }
+         }
+
+         function easeOutCubic(t: number) {
+            return 1 - Math.pow(1 - t, 3);
+         }
+
+         requestAnimationFrame(animateScroll);
+      }
+   }, [shouldScroll]);
 
    useEffect(() => {
       if (!containerRef.current || !modelData) return;
@@ -94,20 +164,24 @@ export default function Visualizer({ data }: { data: File }) {
    }, [modelData]);
 
    return (
-      <div
-         ref={visualizerRef}
-         className="w-full flex flex-col items-center min-h-screen"
-      >
-         <h2 className="text-2xl font-semibold text-zinc-900 mt-6 mb-8">
-            Your neural net:
+      <div ref={visualizerRef} className="relative w-full min-h-screen flex">
+         <h2
+            className={`absolute top-2 left-15 text-2xl font-semibold text-zinc-900 p-4 z-50 transform transition-transform duration-300 ease-in-out
+               ${isSidebarOpen ? "translate-x-50" : "translate-x-0"}`}
+         >
+            {modelData && <div>{data.name}</div>}
          </h2>
-         <div className="flex-1 w-full flex items-center justify-center">
-            {loading && <p className="text-gray-400">Loading...</p>}
+         <SideBar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+         <div
+            ref={containerRef}
+            className="flex-1 flex items-center justify-center"
+         >
+            {loading && <p className="text-zinc-900">Loading...</p>}
             {error && <p className="text-red-500">{error}</p>}
-            {!loading && !error && modelData && <div ref={containerRef}></div>}
+            {!loading && !error && modelData && <div></div>}
          </div>
-         <SideBar />
          <ScrollTopButton />
       </div>
    );
 }
+// TODO: snap scroll down (scroll all the way down if user scrolled a bit on the main screen)

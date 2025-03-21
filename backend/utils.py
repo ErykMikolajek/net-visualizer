@@ -1,4 +1,4 @@
-def parse_tensorflow_file(file_path):
+def parse_tensorflow_file(file_path, original_filename):
     import tensorflow as tf
     import json
 
@@ -6,6 +6,7 @@ def parse_tensorflow_file(file_path):
 
     model_info = {
         'model_name': model.name,
+        'model_filename': original_filename,
         'total_params': model.count_params(),
         'layers': []
     }

@@ -36,10 +36,10 @@ async def process_tensorflow(file: UploadFile):
         temp_file_path = temp_file.name
     
     try:
-        return json.loads(utils.parse_tensorflow_file(temp_file_path))
+        return json.loads(utils.parse_tensorflow_file(temp_file_path, file.filename))
         
     except Exception as e:
         return {"error": f"Error loading model: {str(e)}"}
-    # finally:
-    #     if os.path.exists(temp_file_path):
-    #         os.unlink(temp_file_path)
+    finally:
+        if os.path.exists(temp_file_path):
+            os.unlink(temp_file_path)
