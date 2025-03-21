@@ -37,7 +37,6 @@ export function setupScene(container: HTMLDivElement | null) {
 
 export function createModel(layers: any[], renderSettings: displaySettings) {
    const model = new THREE.Group();
-   const layerCount = layers.length;
    const maxObjectLength = 250;
    const spacingBetweenLayers = 20;
    let drawingPosition = 0;
@@ -194,7 +193,7 @@ export function animateScene(renderer: THREE.WebGLRenderer, labelRenderer: CSS2D
    }
    animate();
 }
-// TODOD: add labelRenderer
+
 export function handleResize(camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer, labelRenderer: CSS2DRenderer) {
    const resize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;

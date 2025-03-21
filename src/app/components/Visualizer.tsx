@@ -26,6 +26,7 @@ interface LoadedModel {
 export default function Visualizer({ data }: { data: File }) {
    const containerRef = useRef<HTMLDivElement>(null);
    const modelRef = useRef<THREE.Object3D | null>(null);
+   const sceneRef = useRef<any>(null);
    const visualizerRef = useRef<HTMLDivElement>(null);
    const [lastScrollY, setLastScrollY] = useState(0);
    const [lastTime, setLastTime] = useState(0);
@@ -126,54 +127,50 @@ export default function Visualizer({ data }: { data: File }) {
 
       const sceneSetup = setupScene(containerRef.current);
       if (!sceneSetup) return;
-      const scene = sceneSetup.scene;
-      const camera = sceneSetup.camera;
-      const renderer = sceneSetup.renderer;
-      const labelRenderer = sceneSetup.labelRenderer;
-      const controls = sceneSetup.controls;
 
-      if (!scene || !camera || !renderer) return;
+      sceneRef.current = sceneSetup;
+      const { scene, camera, renderer, labelRenderer, controls } = sceneSetup;
 
-      if (modelRef.current) {
-         controls.saveState();
-
-         scene.remove(modelRef.current);
-         modelRef.current.children.forEach((child) => {
-            if (child instanceof THREE.Mesh) {
-               child.geometry.dispose();
-               (child.material as THREE.Material).dispose();
-            }
-         });
-         modelRef.current.clear();
-      }
       modelRef.current = createModel(modelData.layers, settingsState);
-      controls.reset();
       scene.add(modelRef.current);
 
       camera.position.z = 400;
       camera.position.y = 100;
-      renderer.render(scene, camera);
+      // renderer.render(scene, camera);
 
       animateScene(renderer, labelRenderer, scene, camera, controls);
       const cleanupResize = handleResize(camera, renderer, labelRenderer);
 
       return () => {
          cleanupResize();
-         containerRef.current?.removeChild(renderer.domElement);
+         if (
+            containerRef.current &&
+            renderer.domElement.parentNode === containerRef.current
+         ) {
+            containerRef.current.removeChild(renderer.domElement);
+         }
+         if (
+            containerRef.current &&
+            labelRenderer.domElement.parentNode === containerRef.current
+         ) {
+            containerRef.current.removeChild(labelRenderer.domElement);
+         }
          if (modelRef.current) {
             scene.remove(modelRef.current);
-            modelRef.current?.children.forEach((child) => {
+            modelRef.current.children.forEach((child) => {
                const mesh = child as THREE.Mesh;
                if (mesh.geometry) mesh.geometry.dispose();
                if (mesh.material) (mesh.material as THREE.Material).dispose();
             });
-            modelRef.current?.children.forEach((child) => {
+            modelRef.current.children.forEach((child) => {
                if (child instanceof THREE.Object3D) {
                   child.children.forEach((labelChild) => {
                      if (labelChild instanceof CSS2DObject) {
-                        labelRenderer.domElement.removeChild(
-                           labelChild.element
-                        );
+                        if (labelChild.element.parentNode) {
+                           labelChild.element.parentNode.removeChild(
+                              labelChild.element
+                           );
+                        }
                      }
                   });
                }
@@ -181,17 +178,31 @@ export default function Visualizer({ data }: { data: File }) {
             modelRef.current.clear();
          }
       };
-   }, [modelData, settingsState]);
+   }, [modelData]);
 
-   // function updateModel(model: THREE.Object3D, settings: displaySettings) {
-   //    model.children.forEach((child) => {
-   //       if (child instanceof THREE.Mesh) {
-   //          // np. zmiana koloru warstw w zależności od settingsState.colorPalette
-   //          const material = child.material as THREE.MeshBasicMaterial;
-   //          material.color.set(new THREE.Color(0xffffff));
-   //       }
-   //    });
-   // }
+   // Handle settings changes without recreating the model
+   useEffect(() => {
+      if (!modelRef.current || !modelData || !sceneRef.current) return;
+
+      const { scene, camera, renderer, labelRenderer } = sceneRef.current;
+
+      scene.remove(modelRef.current);
+
+      modelRef.current.children.forEach((child) => {
+         if (child instanceof THREE.Mesh) {
+            child.geometry.dispose();
+            (child.material as THREE.Material).dispose();
+         }
+      });
+      modelRef.current.clear();
+
+      modelRef.current = createModel(modelData.layers, settingsState);
+
+      scene.add(modelRef.current);
+
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+   }, [settingsState]);
 
    return (
       <div ref={visualizerRef} className="relative w-full min-h-screen flex">
