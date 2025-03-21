@@ -1,8 +1,13 @@
 import { ArrowUp } from "lucide-react";
 import { all } from "three/tsl";
 
-export default function ScrollTopButton() {
+export default function ScrollTopButton({
+   setSideBar,
+}: {
+   setSideBar: (isSidebarOpen: boolean) => void;
+}) {
    const scrollToTop = () => {
+      setSideBar(false);
       window.scrollTo({ top: 0, left: 0, behavior: "smooth" });
    };
 

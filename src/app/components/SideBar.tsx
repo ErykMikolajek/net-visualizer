@@ -1,15 +1,22 @@
-import React, { useState } from "react";
 import { Menu, Reply } from "lucide-react";
+
+export interface displaySettings {
+   showLayerNames: boolean;
+   showLayerDimensions: boolean;
+   colorPalette: number;
+}
 
 export default function SideBar({
    isOpen,
    setIsOpen,
+   settings,
+   setSettings,
 }: {
    isOpen: boolean;
    setIsOpen: (open: boolean) => void;
+   settings: displaySettings;
+   setSettings: (settings: displaySettings) => void;
 }) {
-   //  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
    const toggleSidebar = () => {
       setIsOpen(!isOpen);
    };
@@ -35,22 +42,48 @@ export default function SideBar({
                   Display options
                </h2>
                <div className="flex flex-col items-left">
-                  <h3 className="text-md font-semibold text-zinc-900">
-                     Option 1
+                  <h3 className="pb-1 text-md font-semibold text-zinc-900">
+                     Labels visibility
                   </h3>
+                  <div className="flex flex-row items-center py-1">
+                     <input
+                        type="checkbox"
+                        id="showLayerDimensions"
+                        checked={settings.showLayerDimensions}
+                        onChange={() =>
+                           setSettings({
+                              ...settings,
+                              showLayerDimensions:
+                                 !settings.showLayerDimensions,
+                           })
+                        }
+                        className="h-4 w-4 text-zinc-600 focus:ring-zinc-500 border-zinc-300 rounded accent-zinc-700"
+                     />
+                     <label
+                        htmlFor="showLayerDimensions"
+                        className="ml-2 block text-sm text-zinc-700"
+                     >
+                        Show tensor sizes
+                     </label>
+                  </div>
                   <div className="flex flex-row items-center">
                      <input
                         type="checkbox"
-                        // id={optionKey}
-                        // checked={options[optionKey]}
-                        // onChange={() => handleOptionChange(optionKey)}
-                        className="h-4 w-4 text-zinc-600 focus:ring-zinc-500 border-zinc-300 rounded"
+                        id="showLayerNames"
+                        checked={settings.showLayerNames}
+                        onChange={() =>
+                           setSettings({
+                              ...settings,
+                              showLayerNames: !settings.showLayerNames,
+                           })
+                        }
+                        className="h-4 w-4 text-zinc-600 focus:ring-zinc-500 border-zinc-300 rounded accent-zinc-700"
                      />
                      <label
-                        // htmlFor={optionKey}
+                        htmlFor="showLayerNames"
                         className="ml-2 block text-sm text-zinc-700"
                      >
-                        Option1
+                        Show layers names
                      </label>
                   </div>
                </div>

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+import { displaySettings } from "../components/SideBar";
 
 export function setupScene(container: HTMLDivElement | null) {
    if (!container) return null;
@@ -34,7 +35,7 @@ export function setupScene(container: HTMLDivElement | null) {
    return { scene, camera, renderer, labelRenderer, controls };
 }
 
-export function createModel(layers: any[]) {
+export function createModel(layers: any[], renderSettings: displaySettings) {
    const model = new THREE.Group();
    const layerCount = layers.length;
    const maxObjectLength = 250;
@@ -86,9 +87,9 @@ export function createModel(layers: any[]) {
       let layerColor;
       let edgeColor;
       let customSpacing = 0;
-      let drawSizeLabels = true;
+      let drawSizeLabels = renderSettings.showLayerDimensions;
       let denseLayerLabels = false;
-      let drawLayerNamesLabels = true;
+      let drawLayerNamesLabels = renderSettings.showLayerNames;
 
       switch(layer.type){
         case 'InputLayer':

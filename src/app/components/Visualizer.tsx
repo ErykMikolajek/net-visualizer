@@ -8,7 +8,7 @@ import {
    handleResize,
 } from "../lib/threeScene";
 import { fetchNetworkData } from "../lib/fetchModel";
-import SideBar from "./SideBar";
+import SideBar, { displaySettings } from "./SideBar";
 import ScrollTopButton from "./ScrollTopButton";
 
 interface Layer {
@@ -25,6 +25,7 @@ interface LoadedModel {
 
 export default function Visualizer({ data }: { data: File }) {
    const containerRef = useRef<HTMLDivElement>(null);
+   const modelRef = useRef<THREE.Object3D | null>(null);
    const visualizerRef = useRef<HTMLDivElement>(null);
    const [lastScrollY, setLastScrollY] = useState(0);
    const [lastTime, setLastTime] = useState(0);
@@ -34,6 +35,12 @@ export default function Visualizer({ data }: { data: File }) {
    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
    const [loading, setLoading] = useState(false);
    const [error, setError] = useState<string | null>(null);
+
+   const [settingsState, setSettingsState] = useState<displaySettings>({
+      showLayerNames: true,
+      showLayerDimensions: true,
+      colorPalette: 0,
+   });
 
    useEffect(() => {
       if (!data) return;
@@ -127,8 +134,21 @@ export default function Visualizer({ data }: { data: File }) {
 
       if (!scene || !camera || !renderer) return;
 
-      const model = createModel(modelData.layers);
-      scene.add(model);
+      if (modelRef.current) {
+         controls.saveState();
+
+         scene.remove(modelRef.current);
+         modelRef.current.children.forEach((child) => {
+            if (child instanceof THREE.Mesh) {
+               child.geometry.dispose();
+               (child.material as THREE.Material).dispose();
+            }
+         });
+         modelRef.current.clear();
+      }
+      modelRef.current = createModel(modelData.layers, settingsState);
+      controls.reset();
+      scene.add(modelRef.current);
 
       camera.position.z = 400;
       camera.position.y = 100;
@@ -140,14 +160,14 @@ export default function Visualizer({ data }: { data: File }) {
       return () => {
          cleanupResize();
          containerRef.current?.removeChild(renderer.domElement);
-         if (model) {
-            scene.remove(model);
-            model.children.forEach((child) => {
+         if (modelRef.current) {
+            scene.remove(modelRef.current);
+            modelRef.current?.children.forEach((child) => {
                const mesh = child as THREE.Mesh;
                if (mesh.geometry) mesh.geometry.dispose();
                if (mesh.material) (mesh.material as THREE.Material).dispose();
             });
-            model.children.forEach((child) => {
+            modelRef.current?.children.forEach((child) => {
                if (child instanceof THREE.Object3D) {
                   child.children.forEach((labelChild) => {
                      if (labelChild instanceof CSS2DObject) {
@@ -158,10 +178,20 @@ export default function Visualizer({ data }: { data: File }) {
                   });
                }
             });
-            model.clear();
+            modelRef.current.clear();
          }
       };
-   }, [modelData]);
+   }, [modelData, settingsState]);
+
+   // function updateModel(model: THREE.Object3D, settings: displaySettings) {
+   //    model.children.forEach((child) => {
+   //       if (child instanceof THREE.Mesh) {
+   //          // np. zmiana koloru warstw w zależności od settingsState.colorPalette
+   //          const material = child.material as THREE.MeshBasicMaterial;
+   //          material.color.set(new THREE.Color(0xffffff));
+   //       }
+   //    });
+   // }
 
    return (
       <div ref={visualizerRef} className="relative w-full min-h-screen flex">
@@ -171,7 +201,12 @@ export default function Visualizer({ data }: { data: File }) {
          >
             {modelData && <div>{data.name}</div>}
          </h2>
-         <SideBar isOpen={isSidebarOpen} setIsOpen={setIsSidebarOpen} />
+         <SideBar
+            isOpen={isSidebarOpen}
+            setIsOpen={setIsSidebarOpen}
+            settings={settingsState}
+            setSettings={setSettingsState}
+         />
          <div
             ref={containerRef}
             className="flex-1 flex items-center justify-center"
@@ -180,8 +215,8 @@ export default function Visualizer({ data }: { data: File }) {
             {error && <p className="text-red-500">{error}</p>}
             {!loading && !error && modelData && <div></div>}
          </div>
-         <ScrollTopButton />
+         <ScrollTopButton setSideBar={setIsSidebarOpen} />
       </div>
    );
 }
-// TODO: snap scroll down (scroll all the way down if user scrolled a bit on the main screen)
+// TODO: sad face when can't parse object
