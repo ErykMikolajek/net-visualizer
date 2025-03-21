@@ -138,23 +138,24 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
       const edgeLines = new THREE.LineSegments(edgesGeometry, edgeMaterial);
       shape.add(edgeLines);
       
-      drawingPosition += (width/2);
-
       arrowStart.setX(drawingPosition);
+      arrowEnd.setX(drawingPosition + spacingBetweenLayers + customSpacing);
+
+      // Set layer name labels positions
+      layerNameLabel.position.set(drawingPosition + (arrowStart.distanceTo(arrowEnd))/2, (height/2) + 5, 0);
+
+      drawingPosition += spacingBetweenLayers + customSpacing + (width/2);
       shape.position.setX(drawingPosition);
 
-      // Set labels positions
+      // Set dimensions labels positions
       sizexLabel.position.set(drawingPosition, -(height/2) - 3.5, (depth/2) + 3.5);
       sizeyLabel.position.set(drawingPosition + (width/2) + 3.5,  0, (depth/2) + 3.5);
       sizezLabel.position.set(drawingPosition + (width/2), -(height/2) - 3.5, 0);
-      layerNameLabel.position.set(drawingPosition - (width/2) - (spacingBetweenLayers)/2, (height/2) + 5, 0);
-
-      drawingPosition += (width/2) + spacingBetweenLayers + customSpacing;
-
-      arrowEnd.setX(drawingPosition);
+      
+      drawingPosition += (width/2);
 
       // Arrows between layers
-      if (layerIndex + 1 < layerCount) {
+      if (layerIndex > 0) {
          const arrowDirection = new THREE.Vector3().subVectors(arrowEnd, arrowStart).normalize();
          const arrowLength = arrowStart.distanceTo(arrowEnd);
          const arrow = new THREE.ArrowHelper(arrowDirection, arrowStart, arrowLength, colors['input_edge'], 5, 5);
