@@ -43,15 +43,79 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
    let arrowStart = new THREE.Vector3(0, 0, 0);
    let arrowEnd = new THREE.Vector3(0, 0, 0);
 
-   const colors = {'main_layer': new THREE.Color(0xF4A261),
-                    'main_edge': new THREE.Color(0xE76F51),
-                    'input_layer': new THREE.Color(0x2A9D8F),
-                    'input_edge': new THREE.Color(0x264653),
-                    'other_layer': new THREE.Color(0xE9C46A),
-                    'dense_layer': new THREE.Color(0x2A9D8F),
-                    'dense_edge': new THREE.Color(0x264653),
-                    'white': new THREE.Color(0xffffff)
+   
+   const defualtColors = {'main_layer': new THREE.Color(0xF4A261),
+      'main_edge': new THREE.Color(0xE76F51),
+      'input_layer': new THREE.Color(0x2A9D8F),
+      'input_edge': new THREE.Color(0x264653),
+      'other_layer': new THREE.Color(0xE9C46A),
+      'dense_layer': new THREE.Color(0x2A9D8F),
+      'dense_edge': new THREE.Color(0x264653),
+      'white': new THREE.Color(0xffffff)
    };
+   
+   const darkColors = {'main_layer': new THREE.Color(0x264653),
+                       'main_edge': new THREE.Color(0x2A9D8F), 
+                       'input_layer': new THREE.Color(0xE9C46A),
+                       'input_edge': new THREE.Color(0xF4A261),
+                       'other_layer': new THREE.Color(0xE76F51),
+                       'dense_layer': new THREE.Color(0xE9C46A),
+                       'dense_edge': new THREE.Color(0xF4A261),
+                       'white': new THREE.Color(0xffffff)
+   };
+
+   const tailwindColors = {'main_layer': new THREE.Color(0x3B82F6),
+                         'main_edge': new THREE.Color(0x64748B), 
+                         'input_layer': new THREE.Color(0xFACC15),
+                         'input_edge': new THREE.Color(0xEC4899),
+                         'other_layer': new THREE.Color(0x10B981),
+                         'dense_layer': new THREE.Color(0xFACC15),
+                         'dense_edge': new THREE.Color(0xEC4899),
+                         'white': new THREE.Color(0xffffff)
+                      };
+
+   const neonColors = {'main_layer': new THREE.Color(0xFF00FF),
+                        'main_edge': new THREE.Color(0x00FFFF),
+                        'input_layer': new THREE.Color(0xFF4500),
+                        'input_edge': new THREE.Color(0x8B00FF),
+                        'other_layer': new THREE.Color(0x00FF00),
+                        'dense_layer': new THREE.Color(0xFF4500),
+                        'dense_edge': new THREE.Color(0x8B00FF),
+                        'white': new THREE.Color(0xffffff)
+   };
+
+   const naturalColors = {'main_layer': new THREE.Color(0x3E606F),
+                          'main_edge': new THREE.Color(0x6C4F3D),
+                           'input_layer': new THREE.Color(0xD9BF77),
+                           'input_edge': new THREE.Color(0xA67B5B),
+                           'other_layer': new THREE.Color(0xCFC291),
+                           'dense_layer': new THREE.Color(0xD9BF77),
+                           'dense_edge': new THREE.Color(0xA67B5B),
+                           'white': new THREE.Color(0xffffff)
+   };
+
+   const colorPalette = renderSettings.colorPalette;
+
+                     
+   let colors = defualtColors;
+   switch(colorPalette){
+      case 'default':
+         colors = defualtColors;
+         break;
+      case 'dark':
+         colors = darkColors;
+         break;
+      case 'tailwind':
+         colors = tailwindColors;
+         break;
+      case 'neon':
+         colors = neonColors;
+         break;
+      case 'natural':
+         colors = naturalColors;
+         break;
+   }
+
 
    layers.forEach((layer, layerIndex) => {
       const dimensions = layer.output_shape.match(/\d+/g)?.map(Number) ?? [];

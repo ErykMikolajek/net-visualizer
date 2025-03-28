@@ -36,7 +36,7 @@ export default function Visualizer({ data }: { data: File }) {
    const [settingsState, setSettingsState] = useState<displaySettings>({
       showLayerNames: true,
       showLayerDimensions: true,
-      colorPalette: 0,
+      colorPalette: "default",
    });
 
    useEffect(() => {

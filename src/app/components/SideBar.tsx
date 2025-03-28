@@ -3,7 +3,7 @@ import { Menu, Reply } from "lucide-react";
 export interface displaySettings {
    showLayerNames: boolean;
    showLayerDimensions: boolean;
-   colorPalette: number;
+   colorPalette: string;
 }
 
 export default function SideBar({
@@ -85,6 +85,26 @@ export default function SideBar({
                      >
                         Show layers names
                      </label>
+                  </div>
+                  <div className="flex flex-row items-center">
+                     <label htmlFor="colorPalette" className="mr-2 block text-sm text-zinc-700">
+                        Color Palette:
+                     </label>
+                     <select
+                        id="colorPalette"
+                        value={settings.colorPalette}
+                        onChange={(e) =>
+                           {setSettings({ ...settings, colorPalette: e.target.value })
+                           console.log(e.target.value)}
+                        }
+                        className="h-8 px-2 text-zinc-700 border border-zinc-300 rounded bg-white focus:ring-zinc-500"
+                     >
+                        <option value="default">Default</option>
+                        <option value="dark">Dark</option>
+                        <option value="tailwind">Tailwind</option>
+                        <option value="neon">Neon</option>
+                        <option value="natural">Natural</option>
+                     </select>
                   </div>
                </div>
             </div>
