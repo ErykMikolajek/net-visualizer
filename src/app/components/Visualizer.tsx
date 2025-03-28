@@ -28,10 +28,6 @@ export default function Visualizer({ data }: { data: File }) {
    const modelRef = useRef<THREE.Object3D | null>(null);
    const sceneRef = useRef<any>(null);
    const visualizerRef = useRef<HTMLDivElement>(null);
-   const [lastScrollY, setLastScrollY] = useState(0);
-   const [lastTime, setLastTime] = useState(0);
-   const [shouldScroll, setShouldScroll] = useState(false);
-   const [scrollVelocity, setScrollVelocity] = useState(0);
    const [modelData, setModelData] = useState<LoadedModel | null>(null);
    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
    const [loading, setLoading] = useState(false);
@@ -56,71 +52,6 @@ export default function Visualizer({ data }: { data: File }) {
 
       visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
    }, [data]);
-
-   useEffect(() => {
-      const handleScroll = () => {
-         const now = performance.now();
-         const scrollY = window.scrollY;
-         const deltaY = scrollY - lastScrollY;
-         const deltaTime = now - lastTime;
-
-         if (deltaTime > 0) {
-            const velocity = deltaY / deltaTime; // px per ms
-            setScrollVelocity(velocity);
-         }
-
-         const isScrollingDown = deltaY > 0;
-         setLastScrollY(scrollY);
-         setLastTime(now);
-
-         if (isScrollingDown && scrollY >= window.innerHeight / 2) {
-            setShouldScroll(true);
-         }
-      };
-
-      window.addEventListener("scroll", handleScroll);
-      return () => window.removeEventListener("scroll", handleScroll);
-   }, [lastScrollY, lastTime]);
-
-   useEffect(() => {
-      if (shouldScroll && visualizerRef.current) {
-         const targetPosition = visualizerRef.current.offsetTop;
-         const startPosition = window.scrollY;
-         const distance = targetPosition - startPosition;
-
-         // bazowy czas animacji, ale im większa prędkość, tym krócej
-         const baseDuration = 800;
-         const speedFactor = Math.max(
-            0.3,
-            Math.min(1, Math.abs(scrollVelocity) / 0.5)
-         ); // normalizacja
-         const duration = baseDuration * speedFactor; // dynamiczna długość animacji
-
-         let startTime: number | null = null;
-
-         function animateScroll(currentTime: number) {
-            if (startTime === null) startTime = currentTime;
-            const timeElapsed = currentTime - startTime;
-            const progress = Math.min(timeElapsed / duration, 1);
-            window.scrollTo(
-               0,
-               startPosition + distance * easeOutCubic(progress)
-            );
-
-            if (timeElapsed < duration) {
-               requestAnimationFrame(animateScroll);
-            } else {
-               setShouldScroll(false);
-            }
-         }
-
-         function easeOutCubic(t: number) {
-            return 1 - Math.pow(1 - t, 3);
-         }
-
-         requestAnimationFrame(animateScroll);
-      }
-   }, [shouldScroll]);
 
    useEffect(() => {
       if (!containerRef.current || !modelData) return;
