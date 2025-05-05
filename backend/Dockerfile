@@ -1,14 +1,19 @@
-FROM python:3.11
+# Wybór obrazu bazowego z Alpine (minimalny system)
+FROM python:3.11-slim AS backend
 
-WORKDIR /code
+# Ustalamy katalog roboczy wewnątrz kontenera
+WORKDIR /app
 
-COPY ./requirements.txt /code/requirements.txt
+# Kopiujemy plik requirements.txt i instalujemy zależności
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 
-RUN pip install -r /code/requirements.txt
+# Kopiujemy pliki aplikacji do kontenera
+COPY app.py /app/
+COPY utils.py /app/
 
-COPY ./app.py /code/
-COPY ./utils.py /code/
-
+# Otwieramy port, na którym nasza aplikacja będzie nasłuchiwać
 EXPOSE 4000
 
-CMD ["fastapi", "run", "app.py", "--port", "4000"]
+# Uruchamiamy aplikację FastAPI bezpośrednio w kontenerze
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "4000"]
