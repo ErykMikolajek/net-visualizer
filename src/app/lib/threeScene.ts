@@ -212,6 +212,24 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
             denseLayerLabels = true;
             sizexLabel = [sizezLabel, sizezLabel = sizexLabel][0];
             break;
+         case 'Dropout':
+            layerColor = colors['other_layer'];
+            edgeColor = colors['main_edge'];
+            // customSpacing = 1.5 * spacingBetweenLayers;
+            // drawLayerNamesLabels = false;
+            break;
+         case 'BatchNormalization':
+            layerColor = colors['other_layer'];
+            edgeColor = colors['main_edge'];
+            // customSpacing = 1.5 * spacingBetweenLayers;
+            // drawLayerNamesLabels = false;
+            break;
+         case 'GlobalAveragePooling2D':
+            layerColor = colors['other_layer'];
+            edgeColor = colors['main_edge'];
+            // customSpacing = 1.5 * spacingBetweenLayers;
+            // drawLayerNamesLabels = false;
+            break;
          case 'Flatten':
             return;
       }
