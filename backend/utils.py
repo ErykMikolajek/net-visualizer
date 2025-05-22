@@ -45,7 +45,7 @@ def parse_pytorch_file(file_path, original_filename):
     # You can implement this function based on your requirements
 
     try :
-        model = torch.load(file_path)
+        model = torch.load(file_path, weights_only=False)
     except Exception as e:
         raise ValueError(f"Error loading PyTorch model: {e}")
     
@@ -56,12 +56,23 @@ def parse_pytorch_file(file_path, original_filename):
         model.eval()  # Set the model to evaluation mode
 
         layer_info = []
+
+
+        def normalize_layer_type(layer_type: str) -> str:
+            mapping = {
+                "Linear": "Dense",
+                "Conv2d": "Conv2D",
+                "MaxPool2d": "MaxPooling2D",
+                "ReLU": "ReLU",
+                "Flatten": "Flatten",
+            }
+            return mapping.get(layer_type, layer_type)  # fallback to original if unknown
         
         def hook_fn(module, input, output):
             layer_info.append({
                 'name': module._get_name(),
-                'type': str(module),
-                'output_shape': tuple(output.shape) if hasattr(output, "shape") else None
+                'type': normalize_layer_type(module._get_name()),
+                'output_shape': str(tuple(output.shape)) if hasattr(output, "shape") else None
             })
             print(f"Layer: {module._get_name()}, Output shape: {output.shape}")
 
@@ -89,4 +100,4 @@ def parse_pytorch_file(file_path, original_filename):
             'layers': layer_info
         }
 
-    return json.dumps(model_info)
+    return model_info

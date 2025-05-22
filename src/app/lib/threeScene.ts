@@ -213,6 +213,10 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
             denseLayerLabels = true;
             sizexLabel = [sizezLabel, sizezLabel = sizexLabel][0];
             break;
+         case 'ReLU':
+            layerColor = colors['main_layer'];
+            edgeColor = colors['main_edge'];
+            break;
          case 'Flatten':
             return;
       }

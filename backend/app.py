@@ -46,17 +46,13 @@ async def process_tensorflow(file: UploadFile):
 
 @app.post("/pytorch")
 async def process_pytorch(file: UploadFile):
-    
-    with tempfile.NamedTemporaryFile(delete=False, suffix='.pt') as temp_file:
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.h5') as temp_file:
         content = await file.read()
         temp_file.write(content)
         temp_file_path = temp_file.name
 
-    try:
-        return json.loads(utils.parse_pytorch_file(temp_file_path, file.filename))
-        
-    except Exception as e:
-        return {"error": f"Error loading model: {str(e)}"}
-    finally:
-        if os.path.exists(temp_file_path):
-            os.unlink(temp_file_path)
+    model_info = utils.parse_pytorch_file(temp_file_path, file.filename)
+    # print("Parsed model:", model_info)
+    # print("Type:", type(model_info))
+
+    return model_info

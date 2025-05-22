@@ -8,3 +8,6 @@ services:
     ports:
       - '4000:4000'
     restart: always
+    volumes:
+      - ./backend:/code
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "4000", "--reload"]
