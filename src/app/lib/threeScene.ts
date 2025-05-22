@@ -147,6 +147,7 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
          break;
    }
 
+   console.log(layers);
 
    layers.forEach((layer, layerIndex) => {
       const dimensions = layer.output_shape.match(/\d+/g)?.map(Number) ?? [];

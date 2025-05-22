@@ -52,6 +52,9 @@ export default function Visualizer({ data }: { data: File }) {
          .finally(() => setLoading(false));
 
       visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
+      console.log("Data loaded:", data);
+      console.log("Model data:", modelData);
+      console.log("Model data:", modelData?.layers);
    }, [data]);
 
    useEffect(() => {
