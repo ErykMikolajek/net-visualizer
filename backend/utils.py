@@ -56,25 +56,28 @@ def parse_pytorch_file(file_path, original_filename):
         model.eval()  # Set the model to evaluation mode
 
         layer_info = []
-
+        SKIP_LAYER_TYPES = {"ReLU"}
 
         def normalize_layer_type(layer_type: str) -> str:
             mapping = {
                 "Linear": "Dense",
                 "Conv2d": "Conv2D",
                 "MaxPool2d": "MaxPooling2D",
-                "ReLU": "ReLU",
                 "Flatten": "Flatten",
             }
             return mapping.get(layer_type, layer_type)  # fallback to original if unknown
         
         def hook_fn(module, input, output):
+            layer_type = module._get_name()
+            if layer_type in SKIP_LAYER_TYPES:
+                return
+
             layer_info.append({
-                'name': module._get_name(),
+                'name': layer_type,
                 'type': normalize_layer_type(module._get_name()),
                 'output_shape': str(tuple(output.shape)) if hasattr(output, "shape") else None
             })
-            print(f"Layer: {module._get_name()}, Output shape: {output.shape}")
+            print(f"Layer: {layer_type}, Output shape: {output.shape}")
 
         hooks = []
         for name, module in model.named_modules():
