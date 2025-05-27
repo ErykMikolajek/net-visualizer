@@ -42,3 +42,6 @@ S
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+#glb_files
+/backend/glb_storage

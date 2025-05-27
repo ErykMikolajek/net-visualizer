@@ -6,9 +6,9 @@ import {
    createModel,
    animateScene,
    handleResize,
-   addInteractionToLayers
+   addInteractionToLayers,
 } from "../lib/threeScene";
-import { fetchNetworkData } from "../lib/fetchModel";
+import { exportSceneToGLB, fetchNetworkData } from "../lib/fetchModel";
 import SideBar, { displaySettings } from "./SideBar";
 import ScrollTopButton from "./ScrollTopButton";
 
@@ -71,12 +71,23 @@ export default function Visualizer({ data }: { data: File }) {
 
       camera.position.z = 400;
       camera.position.y = 100;
-      // renderer.render(scene, camera);
 
       animateScene(renderer, labelRenderer, scene, camera, controls);
       const cleanupResize = handleResize(camera, renderer, labelRenderer);
 
       addInteractionToLayers(containerRef.current, camera, scene);
+
+      // Export the scene to GLB after initial render
+      exportSceneToGLB(scene)
+         .then((response) => {
+            if (!response.ok) {
+               throw new Error("Failed to export scene to GLB");
+            }
+            console.log("Scene exported to GLB successfully");
+         })
+         .catch((error) => {
+            console.error("Error exporting scene to GLB:", error);
+         });
 
       return () => {
          cleanupResize();
@@ -167,4 +178,5 @@ export default function Visualizer({ data }: { data: File }) {
       </div>
    );
 }
-// TODO: sad face when can't parse object
+// TODO: add sad face when can't parse object with a message how to save a model in a way
+// that is compatible with the application parser

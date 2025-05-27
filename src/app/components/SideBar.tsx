@@ -1,4 +1,5 @@
-import { Menu, Reply } from "lucide-react";
+import { Menu, Reply, Download } from "lucide-react";
+import { downloadLatestGLB } from "../lib/fetchModel";
 
 export interface displaySettings {
    showLayerNames: boolean;
@@ -19,6 +20,14 @@ export default function SideBar({
 }) {
    const toggleSidebar = () => {
       setIsOpen(!isOpen);
+   };
+
+   const handleDownload = async () => {
+      try {
+         await downloadLatestGLB();
+      } catch (error) {
+         console.error("Error downloading model:", error);
+      }
    };
 
    return (
@@ -86,17 +95,26 @@ export default function SideBar({
                         Show layers names
                      </label>
                   </div>
+                  <h3 className="pb-1 pt-3 text-md font-semibold text-zinc-900">
+                     Colors
+                  </h3>
                   <div className="flex flex-row items-center">
-                     <label htmlFor="colorPalette" className="mr-2 block text-sm text-zinc-700">
+                     <label
+                        htmlFor="colorPalette"
+                        className="mr-2 block text-sm text-zinc-700"
+                     >
                         Color Palette:
                      </label>
                      <select
                         id="colorPalette"
                         value={settings.colorPalette}
-                        onChange={(e) =>
-                           {setSettings({ ...settings, colorPalette: e.target.value })
-                           console.log(e.target.value)}
-                        }
+                        onChange={(e) => {
+                           setSettings({
+                              ...settings,
+                              colorPalette: e.target.value,
+                           });
+                           console.log(e.target.value);
+                        }}
                         className="h-8 px-2 text-zinc-700 border border-zinc-300 rounded bg-white focus:ring-zinc-500"
                      >
                         <option value="default">Default</option>
@@ -106,6 +124,16 @@ export default function SideBar({
                         <option value="natural">Natural</option>
                      </select>
                   </div>
+                  <h3 className="pb-1 pt-3 text-md font-semibold text-zinc-900">
+                     Export model
+                  </h3>
+                  <button
+                     onClick={handleDownload}
+                     className="mt-2 flex items-center justify-center px-4 py-2 bg-zinc-900 text-zinc-50 rounded-lg hover:bg-zinc-800 transition-colors duration-200"
+                  >
+                     <Download size={16} className="mr-2" />
+                     Download GLB
+                  </button>
                </div>
             </div>
          </div>
