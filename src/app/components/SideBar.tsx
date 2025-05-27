@@ -1,4 +1,5 @@
-import { Menu, Reply } from "lucide-react";
+import { Menu, Reply, Download } from "lucide-react";
+import { downloadLatestGLB } from "../lib/fetchModel";
 
 export interface displaySettings {
    showLayerNames: boolean;
@@ -19,6 +20,14 @@ export default function SideBar({
 }) {
    const toggleSidebar = () => {
       setIsOpen(!isOpen);
+   };
+
+   const handleDownload = async () => {
+      try {
+         await downloadLatestGLB();
+      } catch (error) {
+         console.error("Error downloading model:", error);
+      }
    };
 
    return (
@@ -118,6 +127,13 @@ export default function SideBar({
                   <h3 className="pb-1 pt-3 text-md font-semibold text-zinc-900">
                      Export model
                   </h3>
+                  <button
+                     onClick={handleDownload}
+                     className="mt-2 flex items-center justify-center px-4 py-2 bg-zinc-900 text-zinc-50 rounded-lg hover:bg-zinc-800 transition-colors duration-200"
+                  >
+                     <Download size={16} className="mr-2" />
+                     Download GLB
+                  </button>
                </div>
             </div>
          </div>

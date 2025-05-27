@@ -43,8 +43,9 @@ export function addInteractionToLayers(
 ) {
    const raycaster = new THREE.Raycaster();
    const mouse = new THREE.Vector2();
+   let currentIntersected: THREE.Object3D | null = null;
 
-   container.addEventListener("click", (event: MouseEvent) => {
+   function onMouseMove(event: MouseEvent) {
       const boundingBox = container.getBoundingClientRect();
       mouse.x = ((event.clientX - boundingBox.left) / boundingBox.width) * 2 - 1;
       mouse.y = -((event.clientY - boundingBox.top) / boundingBox.height) * 2 + 1;
@@ -53,14 +54,28 @@ export function addInteractionToLayers(
       const intersects = raycaster.intersectObjects(scene.children, true);
 
       if (intersects.length > 0) {
-         let mesh = intersects[0].object;
+         const mesh = intersects[0].object;
          
-         if (mesh.userData?.name && mesh.userData?.toolTip) {
-            let toolTip = mesh.userData.toolTip;
-            toolTip.visible = !toolTip.visible;         }
+         if (mesh !== currentIntersected) {
+            if (currentIntersected && currentIntersected.userData?.toolTip) {
+               currentIntersected.userData.toolTip.visible = false;
+            }
+            
+            if (mesh.userData?.toolTip) {
+               mesh.userData.toolTip.visible = true;
+               currentIntersected = mesh;
+            }
+         }
+      } else {
+         if (currentIntersected && currentIntersected.userData?.toolTip) {
+            currentIntersected.userData.toolTip.visible = false;
+            currentIntersected = null;
+         }
       }
-   });
- }
+   }
+
+   container.addEventListener("mousemove", onMouseMove);
+}
 
 export function createModel(layers: any[], renderSettings: displaySettings) {
    const model = new THREE.Group();
