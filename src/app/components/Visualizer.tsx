@@ -7,7 +7,7 @@ import {
    animateScene,
    handleResize,
 } from "../lib/threeScene";
-import { fetchNetworkData } from "../lib/fetchModel";
+import { exportSceneToGLB, fetchNetworkData } from "../lib/fetchModel";
 import SideBar, { displaySettings } from "./SideBar";
 import ScrollTopButton from "./ScrollTopButton";
 
@@ -108,6 +108,7 @@ export default function Visualizer({ data }: { data: File }) {
             });
             modelRef.current.clear();
          }
+         exportSceneToGLB(scene);
       };
    }, [modelData]);
 
