@@ -65,25 +65,37 @@ def parse_pytorch_file(file_path, original_filename):
             }
             return mapping.get(layer_type, layer_type)  # fallback to original if unknown
         
+        def convert_shape_to_nhwc(shape):
+            # Convert from NCHW to NHWC format
+            if len(shape) == 4:  # Only convert if it's a 4D tensor (NCHW)
+                n, c, h, w = shape
+                return (n, h, w, c)
+            return shape
+        
         def hook_fn(module, input, output):
             layer_type = module._get_name()
             if layer_type in SKIP_LAYER_TYPES:
                 return
 
+            output_shape = tuple(output.shape) if hasattr(output, "shape") else None
+            if output_shape:
+                output_shape = convert_shape_to_nhwc(output_shape)
+
             layer_info.append({
                 'name': layer_type,
                 'type': normalize_layer_type(module._get_name()),
-                'output_shape': str(tuple(output.shape)) if hasattr(output, "shape") else None
+                'output_shape': str(output_shape) if output_shape else None
             })
-            print(f"Layer: {layer_type}, Output shape: {output.shape}")
+            print(f"Layer: {layer_type}, Output shape: {output_shape}")
 
         hooks = []
         for name, module in model.named_modules():
-            if len(list(module.children())) == 0:  # Pomijamy kontenery
+            if len(list(module.children())) == 0:  # Skip containers
                 h = module.register_forward_hook(hook_fn)
                 hooks.append(h)
 
-        dummy_input = torch.randn(1, 1, 128, 128)  # Adjust the input shape as needed
+        # Create dummy input in NCHW format (PyTorch's native format)
+        dummy_input = torch.randn(1, 1, 128, 128)
         try:
             model(dummy_input)
         except Exception as e:
