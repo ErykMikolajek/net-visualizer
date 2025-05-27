@@ -1,15 +1,15 @@
-# Visualizer
+# Net Visualizer
 
-**Visualizer** is a fullstack web application designed for uploading, processing, and visualizing data files. It includes:
+**Net Visualizer** is a web application designed for uploading, processing, and visualizing neural netowork model files. It includes:
 
 - 🧠 A **Python FastAPI backend** for file handling and data processing
-- 🌐 A **React-based frontend built with Next.js**
-- 🐳 Fully containerized with **Docker Compose** for easy setup
+- 🌐 A **React-based frontend built with Next.js using THREE.js for model visualization**
+- 🐳 Fully containerized backend with **Docker Compose**
 
 ---
 
 ## 📁 Project Structure
-
+```
 ├── backend/ # FastAPI backend  
 │ ├── app.py  
 │ ├── utils.py  
@@ -22,7 +22,7 @@
 ├── compose.yaml   
 ├── package.json  
 └── README.md
-
+```
 
 ---
 
@@ -42,15 +42,18 @@
    cd net-visualizer
     ```
 
-2. Start all services:
-
+2. Start all services:  
+   Frontend:
+   ```bash
+    npm run dev
+    ```
+   Backend:
     ```bash
     docker compose up --build
     ```
 
-3. Open in your browser:  
-Frontend UI → http://localhost:3000  
-Backend API Docs → http://localhost:4000/docs (Swagger UI)
+4. Open in your browser:  
+Frontend → http://localhost:3000  
 
 ## 🧠 Backend – FastAPI
 
@@ -58,12 +61,6 @@ The backend is built with FastAPI and handles:
 * File uploads
 * Data parsing and processing
 * Serving results to the frontend
-
-### ✅ Run backend manually (without Docker)
-
-    cd backend
-    pip install -r requirements.txt
-    uvicorn app:app --host 0.0.0.0 --port 4000
 
 
 ### ✅ Backend Dockerfile
@@ -83,16 +80,6 @@ The backend is built with FastAPI and handles:
     CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "4000"]
 
 
-## 🌐 Frontend – Next.js
+## 🌐 Frontend – Next.js + THREE.js
 
-The frontend is built with **Next.js** and provides the UI for uploading files and visualizing results.
-
-### ▶️ Run frontend manually (without Docker)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Then open: [http://localhost:3000](http://localhost:3000)
+The frontend is built with **Next.js** and provides the model visualization using THREE.js
