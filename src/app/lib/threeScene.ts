@@ -261,6 +261,22 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
          layerIndex,
       };
 
+      // Add invisible padding box for better hover detection
+      const padding = 10; // Padding size in pixels
+      const paddingGeometry = new THREE.BoxGeometry(
+         width + padding,
+         height + padding,
+         depth + padding
+      );
+      const paddingMaterial = new THREE.MeshBasicMaterial({
+         visible: false,
+         transparent: true,
+         opacity: 0
+      });
+      const paddingBox = new THREE.Mesh(paddingGeometry, paddingMaterial);
+      paddingBox.userData = shape.userData; // Share the same userData
+      shape.add(paddingBox);
+
       const toolTip = document.createElement("div");
       toolTip.className = "tooltip";
       toolTip.style.display = "block";
