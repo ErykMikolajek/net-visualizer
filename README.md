@@ -1,36 +1,98 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Visualizer
 
-## Getting Started
+**Visualizer** is a fullstack web application designed for uploading, processing, and visualizing data files. It includes:
 
-First, run the development server:
+- 🧠 A **Python FastAPI backend** for file handling and data processing
+- 🌐 A **React-based frontend built with Next.js**
+- 🐳 Fully containerized with **Docker Compose** for easy setup
+
+---
+
+## 📁 Project Structure
+
+├── backend/ # FastAPI backend  
+│ ├── app.py  
+│ ├── utils.py  
+│ ├── requirements.txt  
+│ └── Dockerfile  
+├── src/app/  
+│ ├── components/  
+│ └── lib/  
+├── test_models/  
+├── compose.yaml   
+├── package.json  
+└── README.md
+
+
+---
+
+## 🚀 Getting Started with Docker Compose
+
+### ✅ Prerequisites
+
+- [Docker](https://www.docker.com/products/docker-desktop/)
+- [Docker Compose](https://docs.docker.com/compose/)
+
+### ▶️ Run the full app (backend + frontend)
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/ErykMikolajek/net-visualizer.git
+   cd net-visualizer
+    ```
+
+2. Start all services:
+
+    ```bash
+    docker compose up --build
+    ```
+
+3. Open in your browser:  
+Frontend UI → http://localhost:3000  
+Backend API Docs → http://localhost:4000/docs (Swagger UI)
+
+## 🧠 Backend – FastAPI
+
+The backend is built with FastAPI and handles:
+* File uploads
+* Data parsing and processing
+* Serving results to the frontend
+
+### ✅ Run backend manually (without Docker)
+
+    cd backend
+    pip install -r requirements.txt
+    uvicorn app:app --host 0.0.0.0 --port 4000
+
+
+### ✅ Backend Dockerfile
+    
+    FROM python:3.11
+
+    WORKDIR /code
+
+    COPY ./requirements.txt /code/requirements.txt
+    RUN pip install --no-cache-dir -r /code/requirements.txt
+
+    COPY ./app.py /code/
+    COPY ./utils.py /code/
+
+    EXPOSE 4000
+
+    CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "4000"]
+
+
+## 🌐 Frontend – Next.js
+
+The frontend is built with **Next.js** and provides the UI for uploading files and visualizing results.
+
+### ▶️ Run frontend manually (without Docker)
 
 ```bash
+cd frontend
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Then open: [http://localhost:3000](http://localhost:3000)

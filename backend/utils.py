@@ -41,8 +41,6 @@ def parse_tensorflow_file(file_path, original_filename):
     return json.dumps(model_info)
 
 def parse_pytorch_file(file_path, original_filename):
-    # Placeholder for PyTorch model parsing logic
-    # You can implement this function based on your requirements
 
     try :
         model = torch.load(file_path, weights_only=False)
