@@ -14,7 +14,7 @@ export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
    const supportedFrameworks: Record<string, string[]> = {
       pytorch: [".pth", ".pt"],
       tensorflow: [".pb", ".h5"],
-      other: [".json"],
+      //other: [".json"],
    };
 
    const handleFileChange = async (
@@ -40,7 +40,7 @@ export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
             >
                <option value="tensorflow">Tensorflow</option>
                <option value="pytorch">Pytorch</option>
-               <option value="other">Other</option>
+               {/* <option value="other">Other</option> */}
             </select>
          </div>
 
