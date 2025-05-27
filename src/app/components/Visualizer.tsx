@@ -6,6 +6,7 @@ import {
    createModel,
    animateScene,
    handleResize,
+   addInteractionToLayers
 } from "../lib/threeScene";
 import { exportSceneToGLB, fetchNetworkData } from "../lib/fetchModel";
 import SideBar, { displaySettings } from "./SideBar";
@@ -51,6 +52,9 @@ export default function Visualizer({ data }: { data: File }) {
          .finally(() => setLoading(false));
 
       visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
+      console.log("Data loaded:", data);
+      console.log("Model data:", modelData);
+      console.log("Model data:", modelData?.layers);
    }, [data]);
 
    useEffect(() => {
@@ -71,6 +75,8 @@ export default function Visualizer({ data }: { data: File }) {
 
       animateScene(renderer, labelRenderer, scene, camera, controls);
       const cleanupResize = handleResize(camera, renderer, labelRenderer);
+
+      addInteractionToLayers(containerRef.current, camera, scene);
 
       return () => {
          cleanupResize();
