@@ -35,6 +35,28 @@ export function setupScene(container: HTMLDivElement | null) {
    return { scene, camera, renderer, labelRenderer, controls };
 }
 
+export function calculateCameraPosition(model: THREE.Object3D, camera: THREE.PerspectiveCamera) {
+   const boundingBox = new THREE.Box3().setFromObject(model);
+   const size = boundingBox.getSize(new THREE.Vector3());
+   const center = boundingBox.getCenter(new THREE.Vector3());
+
+   // Calculate the maximum dimension
+   //const maxDim = Math.max(size.x, size.y, size.z);
+   
+   // Calculate the distance needed to view the entire model
+   // Using a factor of 2 to ensure the model is fully visible with some padding
+   const distance = size.x/2;
+
+   // Position the camera
+   camera.position.set(center.x, center.y + distance * 0.5, center.z + distance);
+   camera.lookAt(center);
+
+   // Update the controls target to the center of the model
+   if (camera.userData.controls) {
+      camera.userData.controls.target.copy(center);
+      camera.userData.controls.update();
+   }
+}
 
 export function addInteractionToLayers(
    container: HTMLDivElement,

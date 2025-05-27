@@ -7,6 +7,7 @@ import {
    animateScene,
    handleResize,
    addInteractionToLayers,
+   calculateCameraPosition,
 } from "../lib/threeScene";
 import { exportSceneToGLB, fetchNetworkData } from "../lib/fetchModel";
 import SideBar, { displaySettings } from "./SideBar";
@@ -69,8 +70,11 @@ export default function Visualizer({ data }: { data: File }) {
       modelRef.current = createModel(modelData.layers, settingsState);
       scene.add(modelRef.current);
 
-      camera.position.z = 400;
-      camera.position.y = 100;
+      // Store controls in camera's userData for the calculateCameraPosition function
+      camera.userData.controls = controls;
+
+      // Calculate and set camera position based on model dimensions
+      calculateCameraPosition(modelRef.current, camera);
 
       animateScene(renderer, labelRenderer, scene, camera, controls);
       const cleanupResize = handleResize(camera, renderer, labelRenderer);
