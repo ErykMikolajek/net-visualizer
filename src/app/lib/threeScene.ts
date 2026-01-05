@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 import { displaySettings } from "../components/SideBar";
+import { LayerActivation } from "../components/Visualizer";
 
 export function setupScene(container: HTMLDivElement | null) {
    if (!container) return null;
@@ -33,6 +34,281 @@ export function setupScene(container: HTMLDivElement | null) {
    container.appendChild(labelRenderer.domElement);
 
    return { scene, camera, renderer, labelRenderer, controls };
+}
+
+export function addInferenceImage(container: HTMLDivElement, camera: THREE.Camera, scene: THREE.Scene, inferenceFile: File) {
+   const textureLoader = new THREE.TextureLoader();
+   const imageUrl = URL.createObjectURL(inferenceFile);
+   
+   // First, remove any existing inference image from the scene
+   const existingImages: THREE.Object3D[] = [];
+   scene.traverse((obj) => {
+      if (obj.userData.isInferenceImage) {
+         existingImages.push(obj);
+      }
+   });
+   existingImages.forEach((img) => {
+      if (img.parent) {
+         img.parent.remove(img);
+      }
+      if (img instanceof THREE.Mesh) {
+         img.geometry.dispose();
+         (img.material as THREE.Material).dispose();
+      }
+   });
+
+   
+   // Find layer 0 and replace it with the inference image
+   scene.traverse((obj) => {
+      if (obj.userData.layerIndex === 0 && obj instanceof THREE.Mesh && !obj.userData.isInferenceImage) {
+         const layerMesh = obj as THREE.Mesh;
+         const geometry = layerMesh.geometry as THREE.BoxGeometry;
+         const params = geometry.parameters;
+         
+         // Get the layer dimensions (width, height, depth from BoxGeometry)
+         const { height, depth } = params;
+         
+         // Hide the original layer box
+         layerMesh.visible = false;
+         
+         // Load texture and create plane matching the layer's face
+         const texture = textureLoader.load(imageUrl, () => {
+            URL.revokeObjectURL(imageUrl);
+         });
+         texture.magFilter = THREE.NearestFilter;
+         
+         // Create plane geometry matching the layer's face (height x depth for YZ plane)
+         const planeGeometry = new THREE.PlaneGeometry(height, depth);
+         const planeMaterial = new THREE.MeshBasicMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+            transparent: false,
+         });
+         
+         const inferenceImage = new THREE.Mesh(planeGeometry, planeMaterial);
+         inferenceImage.userData.isInferenceImage = true;
+         
+         // Rotate to face the X+ direction (same as network flow direction)
+         inferenceImage.rotation.y = Math.PI / 2;
+         
+         // Position at the same location as the original layer
+         inferenceImage.position.copy(layerMesh.position);
+         
+         // Add to the same parent as the layer (the model group)
+         if (layerMesh.parent) {
+            layerMesh.parent.add(inferenceImage);
+         }
+      }
+   });
+}
+
+export function visualizeInferenceOutput(scene: THREE.Scene, activations: LayerActivation[]) {
+   // Remove any existing activation visualizations
+   const existingActivations: THREE.Object3D[] = [];
+   scene.traverse((obj) => {
+      if (obj.userData.isActivationVisualization) {
+         existingActivations.push(obj);
+      }
+   });
+   existingActivations.forEach((activation) => {
+      if (activation.parent) {
+         activation.parent.remove(activation);
+      }
+      if (activation instanceof THREE.InstancedMesh) {
+         activation.geometry.dispose();
+         (activation.material as THREE.Material).dispose();
+      }
+   });
+
+   // Find the model group in the scene
+   let modelGroup: THREE.Group | null = null;
+   scene.traverse((obj) => {
+      if (obj instanceof THREE.Group && obj.children.some(child => child.userData.layerIndex !== undefined)) {
+         modelGroup = obj;
+      }
+   });
+
+   if (!modelGroup) {
+      console.warn("Model group not found in scene");
+      return;
+   }
+
+   // Store reference with explicit type to avoid TypeScript narrowing issues
+   const group: THREE.Group = modelGroup as THREE.Group;
+
+   // Collect all layer shapes first (direct children of modelGroup with layerIndex)
+   // This avoids the issue of finding paddingBox which shares userData
+   const layerShapes: THREE.Mesh[] = [];
+   group.children.forEach((child: THREE.Object3D) => {
+      if (child instanceof THREE.Mesh && child.userData.layerIndex !== undefined) {
+         layerShapes.push(child);
+      }
+   });
+
+   // Hide ALL children of the model group (original visualization)
+   group.children.forEach((child: THREE.Object3D) => {
+    if (!(child instanceof THREE.ArrowHelper) && (child.userData.isInferenceImage === undefined)) {
+        child.visible = false;
+        child.traverse((descendant: THREE.Object3D) => {
+            if (!(descendant instanceof THREE.ArrowHelper) && (descendant.userData.isInferenceImage === undefined)) {
+                descendant.visible = false;
+            }
+        });
+      }
+   });
+
+   // Process each layer's activations
+   activations.forEach((layerActivation) => {
+      const { name, activations: values } = layerActivation;
+
+      // Find the corresponding layer mesh from our collected shapes
+      const layerMesh = layerShapes.find(shape => shape.userData.name === name);
+
+      if (!layerMesh) {
+         console.warn(`Layer mesh not found for: ${name}`);
+         return;
+      }
+
+      // Skip input layers and flatten layers
+      const layerType = layerMesh.userData.type;
+      if (layerType === 'InputLayer' || layerType === 'Flatten') {
+         return;
+      }
+
+      // Get the layer's geometry dimensions - these ARE the cube counts
+      // In createModel, dimensions are extracted from output_shape as integers
+      // layerWidth (X) = channels, layerHeight (Y) = spatial W, layerDepth (Z) = spatial H
+      const geometry = layerMesh.geometry as THREE.BoxGeometry;
+      const params = geometry.parameters;
+      const layerWidth = Math.round(params.width);   // Number of cubes along X (channels)
+      const layerHeight = Math.round(params.height); // Number of cubes along Y (spatial width)
+      const layerDepth = Math.round(params.depth);   // Number of cubes along Z (spatial height)
+
+      // Each cube is exactly 1x1x1
+      const cubeSize = 1;
+      
+      // Total number of cubes in this layer
+      const totalCubes = layerWidth * layerHeight * layerDepth;
+
+      // Flatten activations for easier access
+      const flattenArray = (arr: any): number[] => {
+         if (!Array.isArray(arr)) return [arr];
+         return arr.flatMap(flattenArray);
+      };
+      const flatActivations = flattenArray(values);
+
+      // First pass: count non-zero activations for efficient rendering
+      const threshold = 0.01; // Skip cubes with activation below this threshold
+      let nonZeroCount = 0;
+      const maxActivations = Math.min(flatActivations.length, totalCubes);
+      for (let i = 0; i < maxActivations; i++) {
+         if (flatActivations[i] > threshold) {
+            nonZeroCount++;
+         }
+      }
+
+      if (nonZeroCount === 0) {
+         console.warn(`No non-zero activations for layer: ${name}`);
+         return;
+      }
+
+      // Create instanced mesh only for non-zero activations - cubes are 1x1x1
+      const cubeGeometry = new THREE.BoxGeometry(cubeSize * 0.95, cubeSize * 0.95, cubeSize * 0.95);
+      
+      // Custom shader material for per-instance opacity
+      const cubeMaterial = new THREE.ShaderMaterial({
+         transparent: true,
+         depthWrite: false,
+         uniforms: {},
+         vertexShader: `
+            attribute float instanceOpacity;
+            varying float vOpacity;
+            void main() {
+               vOpacity = instanceOpacity;
+               gl_Position = projectionMatrix * modelViewMatrix * instanceMatrix * vec4(position, 1.0);
+            }
+         `,
+         fragmentShader: `
+            varying float vOpacity;
+            void main() {
+               gl_FragColor = vec4(0.0, 0.0, 0.0, vOpacity);
+            }
+         `,
+      });
+
+      const instancedMesh = new THREE.InstancedMesh(cubeGeometry, cubeMaterial, nonZeroCount);
+      instancedMesh.userData.isActivationVisualization = true;
+      instancedMesh.userData.layerName = name;
+
+      // Create opacity array for per-instance opacity (only for non-zero activations)
+      const opacities = new Float32Array(nonZeroCount);
+
+      // Position each cube and set its opacity
+      const matrix = new THREE.Matrix4();
+      const position = new THREE.Vector3();
+
+      // Calculate starting positions (offset from center of the layer)
+      // Each cube is 1x1x1, positioned at integer offsets
+      const startX = -layerWidth / 2 + 0.5;
+      const startY = -layerHeight / 2 + 0.5;
+      const startZ = -layerDepth / 2 + 0.5;
+
+      let flatIndex = 0;
+      let instanceIndex = 0;
+
+      // Iterate through all cube positions in the layer
+      // Order: Z (depth/H), Y (height/W), X (width/C) - matches TensorFlow [H][W][C] flattening
+      for (let z = 0; z < layerDepth; z++) {
+         for (let y = 0; y < layerHeight; y++) {
+            for (let x = 0; x < layerWidth; x++) {
+               const activationValue = Math.max(0, Math.min(1, flatActivations[flatIndex] || 0));
+               flatIndex++;
+
+               // Skip cubes with near-zero activation
+               if (activationValue <= threshold) {
+                  continue;
+               }
+
+               // Calculate position within the layer (each step is 1 unit)
+               position.set(
+                  startX + x,
+                  startY + y,
+                  startZ + z
+               );
+
+               matrix.setPosition(position);
+               instancedMesh.setMatrixAt(instanceIndex, matrix);
+
+               // Opacity: activation value (0 = transparent, 1 = solid)
+               opacities[instanceIndex] = activationValue;
+
+               instanceIndex++;
+            }
+         }
+      }
+
+      // Apply per-instance opacity attribute
+      instancedMesh.instanceMatrix.needsUpdate = true;
+      cubeGeometry.setAttribute('instanceOpacity', new THREE.InstancedBufferAttribute(opacities, 1));
+
+      // Create black edge outline around the layer bounds
+      const outlineGeometry = new THREE.BoxGeometry(layerWidth, layerHeight, layerDepth);
+      const edgesGeometry = new THREE.EdgesGeometry(outlineGeometry);
+      const edgeMaterial = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+      const layerOutline = new THREE.LineSegments(edgesGeometry, edgeMaterial);
+      layerOutline.userData.isActivationVisualization = true;
+
+      // Position the instanced mesh at the layer's position
+      // Position both the instanced mesh and outline at the layer's position
+      instancedMesh.position.copy(layerMesh.position);
+      layerOutline.position.copy(layerMesh.position);
+
+      // Add visualization to the model group
+      if (modelGroup) {
+         modelGroup.add(instancedMesh);
+         modelGroup.add(layerOutline);
+      }
+   });
 }
 
 export function calculateCameraPosition(model: THREE.Object3D, camera: THREE.PerspectiveCamera) {
@@ -184,7 +460,7 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
          break;
    }
 
-   console.log(layers);
+//    console.log(layers);
 
    layers.forEach((layer, layerIndex) => {
       const dimensions = layer.output_shape.match(/\d+/g)?.map(Number) ?? [];
@@ -202,7 +478,8 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
          element.style.color = "white";
          element.style.fontSize = "9px";
          element.style.fontWeight = "bold";
-         element.style.textShadow = "-1px -1px 0 black, 1px -1px 0 black, -1px 1px 0 black, 1px 1px 0 black";
+         element.style.padding = "2px";
+         element.style.textShadow = "-0.5px -0.5px 0.5px black, 0.5px -0.5px 0.5px black, -0.5px 0.5px 0.5px black, 0.5px 0.5px 0.5px black";
       });
       const [xLabelDiv, yLabelDiv, zLabelDiv, layerNameLabelDiv] = labelsDivs;
       xLabelDiv.textContent = <string><any>width;
@@ -340,7 +617,8 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
       toolTipMesh.position.copy(shape.position);
       toolTipMesh.position.y += height / 2 + 5; // Adjust the position of the tooltip
 
-      toolTipMesh.visible = false; // Hide the tooltip by default
+      toolTipMesh.renderOrder = Infinity;
+      toolTipMesh.visible = false;
 
       shape.add(toolTipMesh);
       shape.userData.toolTip = toolTipMesh;

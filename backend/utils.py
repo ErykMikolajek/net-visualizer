@@ -1,9 +1,24 @@
+import os
+# CRITICAL: Set these BEFORE importing TensorFlow/PyTorch to avoid OpenMP/MKL conflicts
+# These prevent deadlocks when both frameworks are used in the same process
+os.environ['OMP_NUM_THREADS'] = '1'
+os.environ['MKL_NUM_THREADS'] = '1'
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
+os.environ['VECLIB_MAXIMUM_THREADS'] = '1'
+os.environ['NUMEXPR_NUM_THREADS'] = '1'
+# Disable TensorFlow's oneDNN optimizations which can conflict with PyTorch
+os.environ['TF_ENABLE_ONEDNN_OPTS'] = '0'
+
 import tensorflow as tf
 import json
-import os
 import torch
 import torch.nn as nn
 import importlib
+import numpy as np
+from PIL import Image
+import glob
+
+models_dir = "/app/uploads/models"
 
 def parse_tensorflow_file(file_path, original_filename):
 
@@ -16,7 +31,7 @@ def parse_tensorflow_file(file_path, original_filename):
         'layers': []
     }
 
-    input_shape = (None, 128, 128, 1)
+    input_shape = (None, 28, 28, 1)
     model_info['layers'].append({
         'name': 'assumed_input_shape',
         'type': 'InputLayer',
@@ -41,16 +56,19 @@ def parse_tensorflow_file(file_path, original_filename):
     return json.dumps(model_info)
 
 def parse_pytorch_file(file_path, original_filename):
-
-    try :
-        model = torch.load(file_path, weights_only=False)
+    model = None
+    try:
+        # Load model and ensure it's on CPU to avoid GPU memory issues
+        model = torch.load(file_path, weights_only=False, map_location='cpu')
     except Exception as e:
         raise ValueError(f"Error loading PyTorch model: {e}")
     
     if not isinstance(model, nn.Module):
         raise ValueError("The loaded model is not a valid PyTorch nn.Module.")
     
-    else:
+    try:
+        # Explicitly move model to CPU (in case it was saved on GPU)
+        model = model.to('cpu')
         model.eval()  # Set the model to evaluation mode
 
         layer_info = []
@@ -94,15 +112,19 @@ def parse_pytorch_file(file_path, original_filename):
                 h = module.register_forward_hook(hook_fn)
                 hooks.append(h)
 
-        # Create dummy input in NCHW format (PyTorch's native format)
-        dummy_input = torch.randn(1, 1, 128, 128)
+        # Create dummy input in NCHW format (PyTorch's native format) on CPU
+        dummy_input = torch.randn(1, 1, 128, 128, device='cpu')
         try:
-            model(dummy_input)
+            with torch.no_grad():  # Disable gradient computation to save memory
+                model(dummy_input)
         except Exception as e:
             raise RuntimeError(f"Error during model inference: {e}")
-        
-        for h in hooks:
-            h.remove()
+        finally:
+            # Always remove hooks, even if inference fails
+            for h in hooks:
+                h.remove()
+            # Clean up dummy input
+            del dummy_input
 
         print("Layer info collected:", layer_info)
 
@@ -113,4 +135,36 @@ def parse_pytorch_file(file_path, original_filename):
             'layers': layer_info
         }
 
-    return model_info
+        return json.dumps(model_info)
+    finally:
+        # Explicitly clean up model and clear CUDA cache if available
+        if model is not None:
+            del model
+        # Clear CUDA cache to free GPU memory if CUDA was used
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+
+def run_inference(file_path, original_filename, modelName: str):
+    modelName = "mnist_classifier_model.h5" # TODO: change to modelName
+    model_name = os.path.join(models_dir, modelName)
+    model_loaded = tf.keras.models.load_model(model_name, compile=False)
+    sample_image = np.array(Image.open(file_path).convert('L')).reshape(1, 28, 28, 1)
+
+    input_shape = model_loaded.input_shape[1:]
+    new_input = tf.keras.Input(shape=input_shape)
+
+    x = new_input
+    outputs = []
+    for layer in model_loaded.layers:
+        x = layer(x)
+        outputs.append(x)
+
+    activation_model = tf.keras.Model(inputs=new_input, outputs=outputs)
+    activations = activation_model.predict(sample_image)
+
+    activations_dict = {}
+    for model_loaded_layer, activation in zip(model_loaded.layers, activations):
+        activations_normalized = (activation - activation.min()) / (activation.max() - activation.min() + 1e-10)
+        activations_dict[model_loaded_layer.name] = activations_normalized.tolist()
+    return json.dumps(activations_dict)
