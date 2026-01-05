@@ -13,7 +13,7 @@ import {
 	resetFocusToModelCenter,
 } from "../lib/threeScene";
 import { fetchNetworkData, runInference } from "../lib/fetchModel";
-import SideBar, { displaySettings } from "./SideBar";
+import SideBar, { displaySettings, ImageInputSettings } from "./SideBar";
 import ScrollTopButton from "./ScrollTopButton";
 
 interface Layer {
@@ -52,39 +52,67 @@ export default function Visualizer({ data }: { data: File }) {
 		LayerActivation[] | null
 	>(null);
 	const [focusedLayer, setFocusedLayer] = useState<string | null>(null);
+	const [imageSettings, setImageSettings] = useState<ImageInputSettings>({
+		width: 28,
+		height: 28,
+		channels: 1,
+	});
+	const [appliedImageSettings, setAppliedImageSettings] =
+		useState<ImageInputSettings>({
+			width: 28,
+			height: 28,
+			channels: 1,
+		});
+	const [isInferenceLoading, setIsInferenceLoading] = useState(false);
+	const [isShapeLoading, setIsShapeLoading] = useState(false);
 
 	const handleRunInference = async (file: File | null) => {
 		if (!file) {
 			console.error("No inference file provided");
 			return;
 		}
+		setIsInferenceLoading(true);
 		try {
-			const result = await runInference(file, data.name || "");
+			const result = await runInference(
+				file,
+				data.name || "",
+				appliedImageSettings
+			);
 			setInferenceOutput(result);
 			if (sceneRef.current?.scene) {
 				visualizeInferenceOutput(sceneRef.current.scene, result);
 			}
 		} catch (error) {
 			console.error("Failed to run inference:", error);
+		} finally {
+			setIsInferenceLoading(false);
 		}
+	};
+
+	const handleApplyShape = () => {
+		setAppliedImageSettings({ ...imageSettings });
 	};
 
 	useEffect(() => {
 		if (!data) return;
 
 		setLoading(true);
+		setIsShapeLoading(true);
 		setError(null);
 
-		fetchNetworkData(data)
+		fetchNetworkData(data, appliedImageSettings)
 			.then(setModelData)
 			.catch((err) => setError(err.message))
-			.finally(() => setLoading(false));
+			.finally(() => {
+				setLoading(false);
+				setIsShapeLoading(false);
+			});
 
 		visualizerRef.current?.scrollIntoView({ behavior: "smooth" });
 		console.log("Data loaded:", data);
 		console.log("Model data:", modelData);
 		console.log("Model data:", modelData?.layers);
-	}, [data]);
+	}, [data, appliedImageSettings]);
 
 	useEffect(() => {
 		if (!containerRef.current || !modelData) return;
@@ -234,7 +262,7 @@ export default function Visualizer({ data }: { data: File }) {
 			</h2>
 			{/* Focused layer indicator */}
 			{focusedLayer && (
-				<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-zinc-800/90 text-white px-4 py-2 rounded-lg z-50 flex items-center gap-3 shadow-lg backdrop-blur-sm">
+				<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-zinc-900 text-white px-4 py-2 rounded-lg z-50 flex items-center gap-3 shadow-lg backdrop-blur-sm">
 					<span className="text-sm">
 						Focused:{" "}
 						<span className="font-semibold text-amber-400">
@@ -258,6 +286,11 @@ export default function Visualizer({ data }: { data: File }) {
 				inferenceFile={inferenceFile}
 				setInferenceFile={setInferenceFile}
 				runInference={handleRunInference}
+				imageSettings={imageSettings}
+				setImageSettings={setImageSettings}
+				isInferenceLoading={isInferenceLoading}
+				onApplyShape={handleApplyShape}
+				isShapeLoading={isShapeLoading}
 			/>
 			<div
 				ref={containerRef}

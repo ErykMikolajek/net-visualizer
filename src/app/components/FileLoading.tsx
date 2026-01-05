@@ -12,7 +12,7 @@ export default function FileLoading({ onDataLoaded }: FileLoadingProps) {
 
 	const supportedFrameworks: Record<string, string[]> = {
 		pytorch: [".pth", ".pt"],
-		tensorflow: [".pb", ".h5"],
+		tensorflow: [".pb", ".h5", ".keras"],
 		//other: [".json"],
 	};
 

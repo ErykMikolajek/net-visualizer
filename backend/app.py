@@ -51,18 +51,29 @@ def test():
     return {"Test": "message"}
 
 @app.post("/tensorflow")
-async def process_tensorflow(file: UploadFile):
+async def process_tensorflow(
+    file: UploadFile,
+    img_width: int = Form(28),
+    img_height: int = Form(28),
+    img_channels: int = Form(1)
+):
     try:
         file_path = await save_file_with_original_name(file, MODELS_DIR)
-        return json.loads(utils.parse_tensorflow_file(file_path, file.filename))
+        return json.loads(utils.parse_tensorflow_file(file_path, file.filename, img_width, img_height, img_channels))
     except Exception as e:
         return {"error": f"Error loading model: {str(e)}"}
 
 @app.post("/inference")
-async def process_inference(file: UploadFile, modelName: str = Form(...)):
+async def process_inference(
+    file: UploadFile, 
+    model_name: str = Form(...),
+    img_width: int = Form(28),
+    img_height: int = Form(28),
+    img_channels: int = Form(1)
+):
     try:
         file_path = await save_file_with_original_name(file, IMAGES_DIR)
-        return json.loads(utils.run_inference(file_path, file.filename, modelName))
+        return json.loads(utils.run_inference(file_path, file.filename, model_name, img_width, img_height, img_channels))
     except Exception as e:
         return {"error": f"Error running inference: {str(e)}"}
 

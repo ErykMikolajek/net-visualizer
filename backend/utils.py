@@ -20,9 +20,12 @@ import glob
 
 models_dir = "/app/uploads/models"
 
-def parse_tensorflow_file(file_path, original_filename):
+def parse_tensorflow_file(file_path, original_filename, img_width: int = 28, img_height: int = 28, img_channels: int = 1):
 
     model = tf.keras.models.load_model(file_path, compile=False)
+
+    # Layer types to skip in visualization
+    SKIP_LAYER_TYPES = {"BatchNormalization", "Dropout", "SpatialDropout1D", "SpatialDropout2D", "SpatialDropout3D"}
 
     model_info = {
         'model_name': model.name,
@@ -31,17 +34,23 @@ def parse_tensorflow_file(file_path, original_filename):
         'layers': []
     }
 
-    input_shape = (None, 28, 28, 1)
+    input_shape = (None, img_height, img_width, img_channels)
     model_info['layers'].append({
-        'name': 'assumed_input_shape',
+        'name': 'input',
         'type': 'InputLayer',
         'output_shape': str(input_shape)
     })
 
     for layer in model.layers:
+        layer_type = layer.__class__.__name__
+        
+        # Skip batch normalization and dropout layers
+        if layer_type in SKIP_LAYER_TYPES:
+            continue
+            
         layer_info = {
             'name': layer.name,
-            'type': layer.__class__.__name__,
+            'type': layer_type,
             'output_shape': '',
         }
         if hasattr(layer, 'output_shape'):
@@ -72,7 +81,7 @@ def parse_pytorch_file(file_path, original_filename):
         model.eval()  # Set the model to evaluation mode
 
         layer_info = []
-        SKIP_LAYER_TYPES = {"ReLU"}
+        SKIP_LAYER_TYPES = {"ReLU", "BatchNorm2d", "BatchNorm1d", "BatchNorm3d", "Dropout", "Dropout2d", "Dropout3d"}
 
         def normalize_layer_type(layer_type: str) -> str:
             mapping = {
@@ -145,26 +154,48 @@ def parse_pytorch_file(file_path, original_filename):
             torch.cuda.empty_cache()
 
 
-def run_inference(file_path, original_filename, modelName: str):
-    modelName = "mnist_classifier_model.h5" # TODO: change to modelName
-    model_name = os.path.join(models_dir, modelName)
+def run_inference(file_path, original_filename, model_name: str, img_width: int = 28, img_height: int = 28, img_channels: int = 1):
+    model_name = os.path.join(models_dir, model_name)
     model_loaded = tf.keras.models.load_model(model_name, compile=False)
-    sample_image = np.array(Image.open(file_path).convert('L')).reshape(1, 28, 28, 1)
+    
+    # Layer types to skip in visualization (same as parse_tensorflow_file)
+    SKIP_LAYER_TYPES = {"BatchNormalization", "Dropout", "SpatialDropout1D", "SpatialDropout2D", "SpatialDropout3D"}
+    
+    img = Image.open(file_path)
+    img = img.resize((img_width, img_height), Image.Resampling.LANCZOS)
+    
+    if img_channels == 1:
+        img = img.convert('L')
+        sample_image = np.array(img).reshape(1, img_height, img_width, 1)
+    elif img_channels == 3:
+        img = img.convert('RGB')
+        sample_image = np.array(img).reshape(1, img_height, img_width, 3)
+    else:
+        img = img.convert('L')
+        img_arr = np.array(img)
+        sample_image = np.stack([img_arr] * img_channels, axis=-1).reshape(1, img_height, img_width, img_channels)
+    
+    sample_image = sample_image.astype(np.float32) / 255.0
 
     input_shape = model_loaded.input_shape[1:]
     new_input = tf.keras.Input(shape=input_shape)
 
     x = new_input
     outputs = []
+    layers_to_include = []
     for layer in model_loaded.layers:
         x = layer(x)
-        outputs.append(x)
+        layer_type = layer.__class__.__name__
+        # Only collect outputs for layers that are not skipped
+        if layer_type not in SKIP_LAYER_TYPES:
+            outputs.append(x)
+            layers_to_include.append(layer)
 
     activation_model = tf.keras.Model(inputs=new_input, outputs=outputs)
     activations = activation_model.predict(sample_image)
 
     activations_dict = {}
-    for model_loaded_layer, activation in zip(model_loaded.layers, activations):
+    for layer, activation in zip(layers_to_include, activations):
         activations_normalized = (activation - activation.min()) / (activation.max() - activation.min() + 1e-10)
-        activations_dict[model_loaded_layer.name] = activations_normalized.tolist()
+        activations_dict[layer.name] = activations_normalized.tolist()
     return json.dumps(activations_dict)

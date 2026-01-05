@@ -1,9 +1,15 @@
-import { Menu, Reply, Download } from "lucide-react";
+import { Menu, Reply, Download, Loader2 } from "lucide-react";
 
 export interface displaySettings {
 	showLayerNames: boolean;
 	showLayerDimensions: boolean;
 	colorPalette: string;
+}
+
+export interface ImageInputSettings {
+	width: number;
+	height: number;
+	channels: number;
 }
 
 export default function SideBar({
@@ -14,6 +20,11 @@ export default function SideBar({
 	inferenceFile,
 	setInferenceFile,
 	runInference,
+	imageSettings,
+	setImageSettings,
+	isInferenceLoading,
+	onApplyShape,
+	isShapeLoading,
 }: {
 	isOpen: boolean;
 	setIsOpen: (open: boolean) => void;
@@ -22,6 +33,11 @@ export default function SideBar({
 	inferenceFile: File | null;
 	setInferenceFile: (file: File | null) => void;
 	runInference: (file: File | null) => void;
+	imageSettings: ImageInputSettings;
+	setImageSettings: (settings: ImageInputSettings) => void;
+	isInferenceLoading: boolean;
+	onApplyShape: () => void;
+	isShapeLoading: boolean;
 }) {
 	const toggleSidebar = () => {
 		setIsOpen(!isOpen);
@@ -43,7 +59,93 @@ export default function SideBar({
 					isOpen ? "translate-x-0" : "-translate-x-full"
 				}`}
 			>
-				<div className="p-6 mt-15 h-full flex flex-col items-left justify-start">
+				<div className="p-6 mt-15 h-full flex flex-col items-left justify-start overflow-y-auto">
+					<h2 className="text-xl font-semibold text-zinc-900 mb-3">
+						Input Shape
+					</h2>
+					<p className="text-sm text-zinc-600 mb-2">
+						Set input tensor dimensions
+					</p>
+					<div className="flex flex-row gap-2 mb-2">
+						<div className="flex flex-col">
+							<label
+								htmlFor="imgWidth"
+								className="text-xs text-zinc-600 mb-1"
+							>
+								Width
+							</label>
+							<input
+								type="number"
+								id="imgWidth"
+								value={imageSettings.width}
+								onChange={(e) =>
+									setImageSettings({
+										...imageSettings,
+										width: parseInt(e.target.value) || 1,
+									})
+								}
+								className="w-16 h-8 px-2 text-sm text-zinc-700 border border-zinc-300 rounded bg-white focus:ring-zinc-500"
+								min={1}
+							/>
+						</div>
+						<div className="flex flex-col">
+							<label
+								htmlFor="imgHeight"
+								className="text-xs text-zinc-600 mb-1"
+							>
+								Height
+							</label>
+							<input
+								type="number"
+								id="imgHeight"
+								value={imageSettings.height}
+								onChange={(e) =>
+									setImageSettings({
+										...imageSettings,
+										height: parseInt(e.target.value) || 1,
+									})
+								}
+								className="w-16 h-8 px-2 text-sm text-zinc-700 border border-zinc-300 rounded bg-white focus:ring-zinc-500"
+								min={1}
+							/>
+						</div>
+						<div className="flex flex-col">
+							<label
+								htmlFor="imgChannels"
+								className="text-xs text-zinc-600 mb-1"
+							>
+								Channels
+							</label>
+							<input
+								type="number"
+								id="imgChannels"
+								value={imageSettings.channels}
+								onChange={(e) =>
+									setImageSettings({
+										...imageSettings,
+										channels: parseInt(e.target.value) || 1,
+									})
+								}
+								className="w-16 h-8 px-2 text-sm text-zinc-700 border border-zinc-300 rounded bg-white focus:ring-zinc-500"
+								min={1}
+								max={4}
+							/>
+						</div>
+					</div>
+					<button
+						onClick={onApplyShape}
+						disabled={isShapeLoading}
+						className="bg-zinc-900 text-zinc-50 px-4 py-2 text-sm font-semibold rounded-xl hover:bg-zinc-800 transition-colors duration-200 mb-6 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+					>
+						{isShapeLoading ? (
+							<>
+								<Loader2 size={16} className="animate-spin" />
+								Applying...
+							</>
+						) : (
+							"Set Shape"
+						)}
+					</button>
 					<h2 className="text-xl font-semibold text-zinc-900 mb-3">
 						Run Inference
 					</h2>
@@ -53,7 +155,7 @@ export default function SideBar({
 					<div className="flex items-center justify-center w-full cursor-pointer">
 						<label
 							htmlFor="dropzone-file"
-							className="flex flex-col items-center justify-center w-full h-64 bg-zinc-50 border border-dashed border-zinc-300 rounded-xl cursor-pointer hover:bg-zinc-100"
+							className="flex flex-col items-center justify-center w-full h-48 bg-zinc-50 border border-dashed border-zinc-300 rounded-xl cursor-pointer hover:bg-zinc-100"
 						>
 							<div className="flex flex-col items-center justify-center text-zinc-900 p-4 text-center">
 								<svg
@@ -67,9 +169,9 @@ export default function SideBar({
 								>
 									<path
 										stroke="currentColor"
-										stroke-linecap="round"
-										stroke-linejoin="round"
-										stroke-width="2"
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										strokeWidth="2"
 										d="M15 17h3a3 3 0 0 0 0-6h-.025a5.56 5.56 0 0 0 .025-.5A5.5 5.5 0 0 0 7.207 9.021C7.137 9.017 7.071 9 7 9a4 4 0 1 0 0 8h2.167M12 19v-9m0 0-2 2m2-2 2 2"
 									/>
 								</svg>
@@ -94,9 +196,17 @@ export default function SideBar({
 					</div>
 					<button
 						onClick={() => runInference(inferenceFile || null)}
-						className="bg-zinc-900 text-zinc-50 px-4 py-2 text-xl font-semibold rounded-xl hover:bg-zinc-800 transition-colors duration-200 mb-6 mt-2"
+						disabled={isInferenceLoading}
+						className="bg-zinc-900 text-zinc-50 px-4 py-2 text-xl font-semibold rounded-xl hover:bg-zinc-800 transition-colors duration-200 mb-6 mt-2 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
 					>
-						Run
+						{isInferenceLoading ? (
+							<>
+								<Loader2 size={20} className="animate-spin" />
+								Running...
+							</>
+						) : (
+							"Run"
+						)}
 					</button>
 					<h2 className="text-xl font-semibold text-zinc-900 mb-4">
 						Display options

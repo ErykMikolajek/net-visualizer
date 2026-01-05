@@ -44,4 +44,7 @@ S
 next-env.d.ts
 
 #glb_files
-/backend/glb_storage
+/backend/glb_storage/
+
+# sample models
+/test_models/

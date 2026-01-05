@@ -1,4 +1,5 @@
 import { LayerActivation } from "../components/Visualizer";
+import { ImageInputSettings } from "../components/SideBar";
 
 const getModelTensorflowEndpoint = "http://localhost:4000/tensorflow"
 const getModelPytorchEndpoint = "http://localhost:4000/pytorch"
@@ -8,11 +9,18 @@ interface InferenceResponse {
     [layerName: string]: number[][];
 }
 
-export async function fetchNetworkData(file: File) {
+export async function fetchNetworkData(file: File, imageSettings?: ImageInputSettings) {
     const formData = new FormData();
     formData.append("file", file);
+    
+    // Add image settings to form data if provided
+    if (imageSettings) {
+        formData.append("img_width", imageSettings.width.toString());
+        formData.append("img_height", imageSettings.height.toString());
+        formData.append("img_channels", imageSettings.channels.toString());
+    }
    
-    if (file.name.endsWith(".h5")) {
+    if (file.name.endsWith(".h5") || file.name.endsWith(".keras")) {
       try {
          const response = await fetch(getModelTensorflowEndpoint, {
             method: "POST",
@@ -43,11 +51,14 @@ export async function fetchNetworkData(file: File) {
    }
 }
 
-export async function runInference(file: File, modelName: string): Promise<LayerActivation[]> {
+export async function runInference(file: File, model_name: string, imageSettings: ImageInputSettings): Promise<LayerActivation[]> {
     if (!file) throw new Error("No file provided");
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("modelName", modelName);
+    formData.append("model_name", model_name);
+    formData.append("img_width", imageSettings.width.toString());
+    formData.append("img_height", imageSettings.height.toString());
+    formData.append("img_channels", imageSettings.channels.toString());
     try {
         const response = await fetch(runInferenceEndpoint, {
             method: "POST",

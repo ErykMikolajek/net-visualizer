@@ -631,17 +631,9 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
             sizexLabel = [sizezLabel, sizezLabel = sizexLabel][0];
             break;
          case 'Dropout':
-            layerColor = colors['other_layer'];
-            edgeColor = colors['main_edge'];
-            // customSpacing = 1.5 * spacingBetweenLayers;
-            // drawLayerNamesLabels = false;
-            break;
+            return; // Skip dropout layers in visualization
          case 'BatchNormalization':
-            layerColor = colors['other_layer'];
-            edgeColor = colors['main_edge'];
-            // customSpacing = 1.5 * spacingBetweenLayers;
-            // drawLayerNamesLabels = false;
-            break;
+            return; // Skip batch normalization layers in visualization
          case 'GlobalAveragePooling2D':
             layerColor = colors['other_layer'];
             edgeColor = colors['main_edge'];
