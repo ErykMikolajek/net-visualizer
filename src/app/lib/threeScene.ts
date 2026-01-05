@@ -257,32 +257,64 @@ export function visualizeInferenceOutput(scene: THREE.Scene, activations: LayerA
       let instanceIndex = 0;
 
       // Iterate through all cube positions in the layer
-      // Order: Z (depth/H), Y (height/W), X (width/C) - matches TensorFlow [H][W][C] flattening
-      for (let z = 0; z < layerDepth; z++) {
-         for (let y = 0; y < layerHeight; y++) {
-            for (let x = 0; x < layerWidth; x++) {
-               const activationValue = Math.max(0, Math.min(1, flatActivations[flatIndex] || 0));
-               flatIndex++;
+      // Dense layers have different geometry (swapped width/depth in createModel) - handle separately
+      const isDenseLayer = layerType === 'Dense';
 
-               // Skip cubes with near-zero activation
-               if (activationValue <= threshold) {
-                  continue;
+      if (isDenseLayer) {
+         // Dense layers: 1D activations displayed along Z axis (the column)
+         // Geometry is BoxGeometry(1, 1, numNeurons) after the swap in createModel
+         for (let i = 0; i < layerDepth; i++) {
+            const activationValue = Math.max(0, Math.min(1, flatActivations[flatIndex] || 0));
+            flatIndex++;
+
+            if (activationValue <= threshold) {
+               continue;
+            }
+
+            // Dense neurons are arranged along Z axis
+            position.set(
+               0,  // centered on X
+               0,  // centered on Y
+               startZ + i
+            );
+
+            matrix.setPosition(position);
+            instancedMesh.setMatrixAt(instanceIndex, matrix);
+            opacities[instanceIndex] = activationValue;
+            instanceIndex++;
+         }
+      } else {
+         // Conv2D, MaxPooling2D, etc.: 3D activations [H][W][C]
+         // h = row index (0 = top row), w = column index, c = channel index
+         for (let h = 0; h < layerDepth; h++) {
+            for (let w = 0; w < layerHeight; w++) {
+               for (let c = 0; c < layerWidth; c++) {
+                  const activationValue = Math.max(0, Math.min(1, flatActivations[flatIndex] || 0));
+                  flatIndex++;
+
+                  // Skip cubes with near-zero activation
+                  if (activationValue <= threshold) {
+                     continue;
+                  }
+
+                  // Calculate position within the layer
+                  // - Rows (h) map to Y axis, inverted (row 0 = top = high Y)
+                  // - Columns (w) map to Z axis, flipped to match input image orientation
+                  // - Channels (c) map to X axis (depth into the layer)
+                  position.set(
+                     startX + c,
+                     startY + (layerHeight - 1 - h),  // Invert: row 0 at top (high Y)
+                     startZ + (layerHeight - 1 - w)   // Flip: column 0 at high Z to match image
+                  );
+
+                  matrix.setPosition(position);
+                  instancedMesh.setMatrixAt(instanceIndex, matrix);
+
+                  // Opacity: activation value (0 = transparent, 1 = solid)
+                  opacities[instanceIndex] = activationValue;
+
+                  instanceIndex++;
                }
-
-               // Calculate position within the layer (each step is 1 unit)
-               position.set(
-                  startX + x,
-                  startY + y,
-                  startZ + z
-               );
-
-               matrix.setPosition(position);
-               instancedMesh.setMatrixAt(instanceIndex, matrix);
-
-               // Opacity: activation value (0 = transparent, 1 = solid)
-               opacities[instanceIndex] = activationValue;
-
-               instanceIndex++;
             }
          }
       }
@@ -334,10 +366,41 @@ export function calculateCameraPosition(model: THREE.Object3D, camera: THREE.Per
    }
 }
 
+// Helper function to animate controls target smoothly
+function animateControlsTarget(controls: OrbitControls, targetPosition: THREE.Vector3, duration: number = 400) {
+   const startTarget = controls.target.clone();
+   const startTime = performance.now();
+   
+   function animate() {
+      const elapsed = performance.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      
+      // Ease out cubic for smooth deceleration
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      
+      controls.target.lerpVectors(startTarget, targetPosition, easeProgress);
+      controls.update();
+      
+      if (progress < 1) {
+         requestAnimationFrame(animate);
+      }
+   }
+   
+   animate();
+}
+
+export function resetFocusToModelCenter(model: THREE.Object3D, controls: OrbitControls) {
+   const boundingBox = new THREE.Box3().setFromObject(model);
+   const center = boundingBox.getCenter(new THREE.Vector3());
+   animateControlsTarget(controls, center);
+}
+
 export function addInteractionToLayers(
    container: HTMLDivElement,
    camera: THREE.Camera,
    scene: THREE.Scene,
+   controls: OrbitControls,
+   onLayerFocus?: (layerName: string | null) => void
 ) {
    const raycaster = new THREE.Raycaster();
    const mouse = new THREE.Vector2();
@@ -372,7 +435,47 @@ export function addInteractionToLayers(
       }
    }
 
+   function onClick(event: MouseEvent) {
+      const boundingBox = container.getBoundingClientRect();
+      mouse.x = ((event.clientX - boundingBox.left) / boundingBox.width) * 2 - 1;
+      mouse.y = -((event.clientY - boundingBox.top) / boundingBox.height) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(scene.children, true);
+
+      if (intersects.length > 0) {
+         let targetMesh = intersects[0].object;
+         
+         // Find the actual layer mesh (check if clicked on padding box or other child)
+         if (targetMesh.parent && targetMesh.parent.userData?.layerIndex !== undefined) {
+            targetMesh = targetMesh.parent;
+         }
+         
+         // Only focus on actual layer meshes
+         if (targetMesh.userData?.layerIndex !== undefined) {
+            // Get the world position of the layer center
+            const worldPosition = new THREE.Vector3();
+            targetMesh.getWorldPosition(worldPosition);
+            
+            // Animate the controls target to this layer's center
+            animateControlsTarget(controls, worldPosition);
+            
+            // Notify about the focus change
+            if (onLayerFocus) {
+               onLayerFocus(targetMesh.userData.name || `Layer ${targetMesh.userData.layerIndex}`);
+            }
+         }
+      }
+   }
+
    container.addEventListener("mousemove", onMouseMove);
+   container.addEventListener("click", onClick);
+   
+   // Return cleanup function
+   return () => {
+      container.removeEventListener("mousemove", onMouseMove);
+      container.removeEventListener("click", onClick);
+   };
 }
 
 export function createModel(layers: any[], renderSettings: displaySettings) {

@@ -10,6 +10,7 @@ import {
 	calculateCameraPosition,
 	addInferenceImage,
 	visualizeInferenceOutput,
+	resetFocusToModelCenter,
 } from "../lib/threeScene";
 import { fetchNetworkData, runInference } from "../lib/fetchModel";
 import SideBar, { displaySettings } from "./SideBar";
@@ -50,6 +51,7 @@ export default function Visualizer({ data }: { data: File }) {
 	const [inferenceOutput, setInferenceOutput] = useState<
 		LayerActivation[] | null
 	>(null);
+	const [focusedLayer, setFocusedLayer] = useState<string | null>(null);
 
 	const handleRunInference = async (file: File | null) => {
 		if (!file) {
@@ -105,7 +107,23 @@ export default function Visualizer({ data }: { data: File }) {
 		animateScene(renderer, labelRenderer, scene, camera, controls);
 		const cleanupResize = handleResize(camera, renderer, labelRenderer);
 
-		addInteractionToLayers(containerRef.current, camera, scene);
+		// Add interaction with layer focus callback
+		const cleanupInteraction = addInteractionToLayers(
+			containerRef.current,
+			camera,
+			scene,
+			controls,
+			(layerName) => setFocusedLayer(layerName)
+		);
+
+		// ESC key handler to reset focus to model center
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape" && modelRef.current) {
+				resetFocusToModelCenter(modelRef.current, controls);
+				setFocusedLayer(null);
+			}
+		};
+		window.addEventListener("keydown", handleKeyDown);
 
 		if (inferenceFile) {
 			addInferenceImage(
@@ -119,6 +137,8 @@ export default function Visualizer({ data }: { data: File }) {
 
 		return () => {
 			cleanupResize();
+			cleanupInteraction();
+			window.removeEventListener("keydown", handleKeyDown);
 			if (
 				containerRef.current &&
 				renderer.domElement.parentNode === containerRef.current
@@ -212,6 +232,24 @@ export default function Visualizer({ data }: { data: File }) {
 			>
 				{modelData && <div>{data.name}</div>}
 			</h2>
+			{/* Focused layer indicator */}
+			{focusedLayer && (
+				<div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-zinc-800/90 text-white px-4 py-2 rounded-lg z-50 flex items-center gap-3 shadow-lg backdrop-blur-sm">
+					<span className="text-sm">
+						Focused:{" "}
+						<span className="font-semibold text-amber-400">
+							{focusedLayer}
+						</span>
+					</span>
+					<span className="text-xs text-zinc-400 border-l border-zinc-600 pl-3">
+						Press{" "}
+						<kbd className="bg-zinc-700 px-1.5 py-0.5 rounded text-xs font-mono">
+							ESC
+						</kbd>{" "}
+						to reset
+					</span>
+				</div>
+			)}
 			<SideBar
 				isOpen={isSidebarOpen}
 				setIsOpen={setIsSidebarOpen}
