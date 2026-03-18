@@ -21,7 +21,8 @@ import glob
 models_dir = "/app/uploads/models"
 
 def parse_tensorflow_file(file_path, original_filename, img_width: int = 28, img_height: int = 28, img_channels: int = 1):
-
+    """ Parse a TensorFlow model file and extract its architecture details. """
+    
     model = tf.keras.models.load_model(file_path, compile=False)
 
     # Layer types to skip in visualization
@@ -153,8 +154,9 @@ def parse_pytorch_file(file_path, original_filename):
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-
 def run_inference(file_path, original_filename, model_name: str, img_width: int = 28, img_height: int = 28, img_channels: int = 1):
+    """ Run inference on an image using a specified TensorFlow model and return activations. """
+    
     model_name = os.path.join(models_dir, model_name)
     model_loaded = tf.keras.models.load_model(model_name, compile=False)
     

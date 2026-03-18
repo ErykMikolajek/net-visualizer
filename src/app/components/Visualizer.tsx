@@ -114,6 +114,7 @@ export default function Visualizer({ data }: { data: File }) {
 		console.log("Model data:", modelData?.layers);
 	}, [data, appliedImageSettings]);
 
+	// Initialize and render the 3D scene when modelData changes
 	useEffect(() => {
 		if (!containerRef.current || !modelData) return;
 

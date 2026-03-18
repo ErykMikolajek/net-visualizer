@@ -28,6 +28,7 @@ app.add_middleware(
 )
 
 def clear_directory(directory: str):
+    """ Clear all files in the specified directory."""
     for filename in os.listdir(directory):
         file_path = os.path.join(directory, filename)
         try:
@@ -39,16 +40,13 @@ def clear_directory(directory: str):
             print(f"Error deleting {file_path}: {e}")
 
 async def save_file_with_original_name(file: UploadFile, directory: str) -> str:
+    """ Save the uploaded file with its original filename after clearing the directory. """
     clear_directory(directory)
     file_path = os.path.join(directory, file.filename)
     content = await file.read()
     with open(file_path, 'wb') as f:
         f.write(content)
     return file_path
-
-@app.get("/test")
-def test():
-    return {"Test": "message"}
 
 @app.post("/tensorflow")
 async def process_tensorflow(

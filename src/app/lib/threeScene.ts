@@ -4,6 +4,7 @@ import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer
 import { displaySettings } from "../components/SideBar";
 import { LayerActivation } from "../components/Visualizer";
 
+// Set up the Three.js scene, camera, renderer, and controls
 export function setupScene(container: HTMLDivElement | null) {
    if (!container) return null;
 
@@ -36,6 +37,7 @@ export function setupScene(container: HTMLDivElement | null) {
    return { scene, camera, renderer, labelRenderer, controls };
 }
 
+// Function to add an inference image to the scene, replacing layer 0
 export function addInferenceImage(container: HTMLDivElement, camera: THREE.Camera, scene: THREE.Scene, inferenceFile: File) {
    const textureLoader = new THREE.TextureLoader();
    const imageUrl = URL.createObjectURL(inferenceFile);
@@ -102,6 +104,7 @@ export function addInferenceImage(container: HTMLDivElement, camera: THREE.Camer
    });
 }
 
+// Function to visualize inference output activations in the scene
 export function visualizeInferenceOutput(scene: THREE.Scene, activations: LayerActivation[]) {
    // Remove any existing activation visualizations
    const existingActivations: THREE.Object3D[] = [];
@@ -343,6 +346,7 @@ export function visualizeInferenceOutput(scene: THREE.Scene, activations: LayerA
    });
 }
 
+// Function to calculate and set the camera position to view the entire model
 export function calculateCameraPosition(model: THREE.Object3D, camera: THREE.PerspectiveCamera) {
    const boundingBox = new THREE.Box3().setFromObject(model);
    const size = boundingBox.getSize(new THREE.Vector3());
@@ -389,12 +393,14 @@ function animateControlsTarget(controls: OrbitControls, targetPosition: THREE.Ve
    animate();
 }
 
+// Function to reset focus to model center
 export function resetFocusToModelCenter(model: THREE.Object3D, controls: OrbitControls) {
    const boundingBox = new THREE.Box3().setFromObject(model);
    const center = boundingBox.getCenter(new THREE.Vector3());
    animateControlsTarget(controls, center);
 }
 
+// Function to add interaction (hover tooltips and click to focus) to layers
 export function addInteractionToLayers(
    container: HTMLDivElement,
    camera: THREE.Camera,
@@ -478,6 +484,7 @@ export function addInteractionToLayers(
    };
 }
 
+// Function to create the 3D model from layers
 export function createModel(layers: any[], renderSettings: displaySettings) {
    const model = new THREE.Group();
    const maxObjectLength = 250;
@@ -777,6 +784,7 @@ export function createModel(layers: any[], renderSettings: displaySettings) {
    return model;
 }
 
+// Animation loop
 export function animateScene(renderer: THREE.WebGLRenderer, labelRenderer: CSS2DRenderer, scene: THREE.Scene, camera: THREE.PerspectiveCamera, controls: OrbitControls) {
    function animate() {
       requestAnimationFrame(animate);
@@ -787,6 +795,7 @@ export function animateScene(renderer: THREE.WebGLRenderer, labelRenderer: CSS2D
    animate();
 }
 
+// Handle window resize
 export function handleResize(camera: THREE.PerspectiveCamera, renderer: THREE.WebGLRenderer, labelRenderer: CSS2DRenderer) {
    const resize = () => {
       camera.aspect = window.innerWidth / window.innerHeight;

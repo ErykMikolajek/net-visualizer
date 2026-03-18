@@ -9,6 +9,7 @@ interface InferenceResponse {
     [layerName: string]: number[][];
 }
 
+// Fetch network data based on the file type
 export async function fetchNetworkData(file: File, imageSettings?: ImageInputSettings) {
     const formData = new FormData();
     formData.append("file", file);
@@ -51,6 +52,7 @@ export async function fetchNetworkData(file: File, imageSettings?: ImageInputSet
    }
 }
 
+// Run inference on the model with the provided image and return layer activations
 export async function runInference(file: File, model_name: string, imageSettings: ImageInputSettings): Promise<LayerActivation[]> {
     if (!file) throw new Error("No file provided");
     const formData = new FormData();
